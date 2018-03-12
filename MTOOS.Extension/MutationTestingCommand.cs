@@ -1,10 +1,12 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.ComponentModel.Design;
+using System.Diagnostics;
 using System.Globalization;
 using System.IO;
 using System.Linq;
 using System.Windows.Forms;
+using System.Xml.Linq;
 using EnvDTE;
 using EnvDTE80;
 using Microsoft.VisualStudio.Shell;
@@ -118,11 +120,15 @@ namespace MTOOS.Extension
                                 solutionBuild2.BuildProject(solutionBuild2.ActiveConfiguration.Name,
                                     unitTestProject.UniqueName, true);
 
-                                dte.ExecuteCommand("CloseAll");
-
                                 dte.ExecuteCommand("TestExplorer.ShowTestExplorer");
                                 dte.ExecuteCommand("TestExplorer.RunAllTests");
 
+                                dte.ExecuteCommand("CloseAll");
+
+                                var unitTestProjectPath = unitTestProject.ConfigurationManager.
+                                    ActiveConfiguration.Properties.Item("OutputPath").Value.ToString();
+
+                                RunTheMutatedUnitTestsUsingNUnitConsole(unitTestProject, dte);
                                 MessageBox.Show("Done.");
                             }
                             else
@@ -146,6 +152,55 @@ namespace MTOOS.Extension
             {
                 CompareFiles(dte);
             }
+        }
+
+        private void RunTheMutatedUnitTestsUsingNUnitConsole(Project unitTestProject, DTE2 dte)
+        {
+            var unitTestAssemblyPath = GetAssemblyPath(unitTestProject);
+            string solutionDir = Path.GetDirectoryName(dte.Solution.FullName);
+            var packagesFolder = Path.Combine(solutionDir, "packages");
+            var NUnitConsolePath = Path.Combine(packagesFolder, 
+                "NUnit.ConsoleRunner.3.8.0\\tools\\nunit3-console.exe");
+            
+            ProcessStartInfo startInfo = new ProcessStartInfo
+            {
+                CreateNoWindow = false,
+                UseShellExecute = false,
+                FileName = NUnitConsolePath,
+                WindowStyle = ProcessWindowStyle.Normal,
+                Arguments = "/k " + string.Format("{0}", unitTestAssemblyPath)
+            };
+
+            try
+            {
+                using (System.Diagnostics.Process exeProcess = System.Diagnostics.Process.Start(startInfo))
+                {
+                    exeProcess.WaitForExit();
+                    var NUnitResultXmlFilePath =
+                        Path.Combine(Path.GetDirectoryName(
+                            GetAssemblyPath(unitTestProject)), "TestResult.xml");
+
+                    XElement testResult = XElement.Load(NUnitResultXmlFilePath);
+                    MessageBox.Show(testResult.ToString());
+                }
+            }
+            catch (Exception e)
+            {
+                MessageBox.Show(e.Message);
+            }
+        }
+
+        private string GetAssemblyPath(Project project)
+        {
+            string fullPath = project.Properties.Item("FullPath").Value.ToString();
+            string outputPath = project.ConfigurationManager.ActiveConfiguration.
+                Properties.Item("OutputPath").Value.ToString();
+
+            string outputDir = Path.Combine(fullPath, outputPath);
+            string outputFileName = project.Properties.Item("OutputFileName").Value.ToString();
+            string assemblyPath = Path.Combine(outputDir, outputFileName);
+
+            return assemblyPath;
         }
         private Project GetUnitTestProject(Solution2 solution)
         {
