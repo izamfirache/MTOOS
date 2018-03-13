@@ -5,7 +5,9 @@ using System.Diagnostics;
 using System.Globalization;
 using System.IO;
 using System.Linq;
+using System.Text;
 using System.Windows.Forms;
+using System.Xml;
 using System.Xml.Linq;
 using EnvDTE;
 using EnvDTE80;
@@ -129,7 +131,6 @@ namespace MTOOS.Extension
                                     ActiveConfiguration.Properties.Item("OutputPath").Value.ToString();
 
                                 RunTheMutatedUnitTestsUsingNUnitConsole(unitTestProject, dte);
-                                MessageBox.Show("Done.");
                             }
                             else
                             {
@@ -161,33 +162,67 @@ namespace MTOOS.Extension
             var packagesFolder = Path.Combine(solutionDir, "packages");
             var NUnitConsolePath = Path.Combine(packagesFolder, 
                 "NUnit.ConsoleRunner.3.8.0\\tools\\nunit3-console.exe");
-            
-            ProcessStartInfo startInfo = new ProcessStartInfo
+            var nunitOutputFilePath = Path.GetDirectoryName(unitTestAssemblyPath);
+
+            var processStartInfo = new ProcessStartInfo
             {
-                CreateNoWindow = false,
+                FileName = string.Format(@"""{0}""", NUnitConsolePath),
+                Arguments = string.Format(@"--work=""{0}"" ""{1}""", nunitOutputFilePath, unitTestAssemblyPath),
                 UseShellExecute = false,
-                FileName = NUnitConsolePath,
-                WindowStyle = ProcessWindowStyle.Normal,
-                Arguments = "/k " + string.Format("{0}", unitTestAssemblyPath)
+                CreateNoWindow = true
             };
 
             try
             {
-                using (System.Diagnostics.Process exeProcess = System.Diagnostics.Process.Start(startInfo))
+                using (System.Diagnostics.Process exeProcess = System.Diagnostics.Process.Start(processStartInfo))
                 {
                     exeProcess.WaitForExit();
-                    var NUnitResultXmlFilePath =
-                        Path.Combine(Path.GetDirectoryName(
-                            GetAssemblyPath(unitTestProject)), "TestResult.xml");
-
-                    XElement testResult = XElement.Load(NUnitResultXmlFilePath);
-                    MessageBox.Show(testResult.ToString());
                 }
             }
             catch (Exception e)
             {
                 MessageBox.Show(e.Message);
             }
+
+            var NUnitResultXmlFilePath = Path.Combine(Path.GetDirectoryName(
+                        GetAssemblyPath(unitTestProject)), "TestResult.xml");
+
+            if (File.Exists(NUnitResultXmlFilePath))
+            {
+                List<string> mutationAnalysis = AnalyzeNUnitTestResultFile(NUnitResultXmlFilePath);
+                StringBuilder sb = new StringBuilder();
+                foreach (string m in mutationAnalysis)
+                {
+                    sb.AppendLine(m);
+                }
+                MessageBox.Show(sb.ToString());
+            }
+        }
+
+        private List<string> AnalyzeNUnitTestResultFile(string nUnitResultXmlFilePath)
+        {
+            List<string> mutationAnalysis = new List<string>();
+            XmlDocument xmlDocument = new XmlDocument();
+            xmlDocument.Load(nUnitResultXmlFilePath);
+
+            XmlNode testRunNode = xmlDocument.SelectSingleNode("test-run");
+            XmlNode assemblyTestSuiteNode = testRunNode.SelectSingleNode("test-suite");
+            XmlNode testSuiteNode = assemblyTestSuiteNode.SelectSingleNode("test-suite");
+
+            if (testSuiteNode.Attributes["type"].Value == "TestSuite")
+            {
+                foreach (XmlNode testFixtureNode in testSuiteNode.SelectNodes("test-suite"))
+                {
+                    if (testFixtureNode.Attributes["name"].Value.Contains("Mutant"))
+                    {
+                        mutationAnalysis.Add(string.Format("{0} mutant is {1}",
+                            testFixtureNode.Attributes["name"].Value,
+                            testFixtureNode.Attributes["result"].Value == "Failed" ? "killed" : "live"));
+                    }
+                }
+            }
+
+            return mutationAnalysis;
         }
 
         private string GetAssemblyPath(Project project)
