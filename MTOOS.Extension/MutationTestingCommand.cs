@@ -13,6 +13,7 @@ using EnvDTE;
 using EnvDTE80;
 using Microsoft.VisualStudio.Shell;
 using Microsoft.VisualStudio.Shell.Interop;
+using MTOOS.Extension.Models;
 using MTOOS.Extension.MutationAnalysis;
 using VSLangProj;
 
@@ -91,7 +92,7 @@ namespace MTOOS.Extension
                     {
                         DialogResult dialogResult = MessageBox.Show("The mutation process is finished." +
                             " Do you want to run the existing unit tests over the mutants set ?", 
-                            "Mutation done.", MessageBoxButtons.YesNo);
+                            "Mutation done.", MessageBoxButtons.YesNo, MessageBoxIcon.Question);
 
                         if (dialogResult == DialogResult.Yes)
                         {
@@ -109,8 +110,6 @@ namespace MTOOS.Extension
                             bool compiledOK = (solutionBuild2.LastBuildInfo == 0);
                             if (compiledOK)
                             {
-                                MessageBox.Show("Original project compiled successfully after mutation.");
-                                
                                 Solution2 solution = (Solution2)dte.Solution;
                                 Project unitTestProject = GetUnitTestProject(solution);
                                 unitTestProject.ProjectItems.AddFolder("MutationCompiledUnits");
@@ -122,15 +121,68 @@ namespace MTOOS.Extension
                                 solutionBuild2.BuildProject(solutionBuild2.ActiveConfiguration.Name,
                                     unitTestProject.UniqueName, true);
 
-                                dte.ExecuteCommand("TestExplorer.ShowTestExplorer");
-                                dte.ExecuteCommand("TestExplorer.RunAllTests");
-
                                 dte.ExecuteCommand("CloseAll");
 
                                 var unitTestProjectPath = unitTestProject.ConfigurationManager.
                                     ActiveConfiguration.Properties.Item("OutputPath").Value.ToString();
 
-                                RunTheMutatedUnitTestsUsingNUnitConsole(unitTestProject, dte);
+                                List<Mutant> liveMutants = RunTheMutatedUnitTestsUsingNUnitConsole
+                                    (unitTestProject, dte);
+
+                                //delete all the unit test mutated classes since they are relevant only
+                                //to run the unit tests over the mutants
+                                foreach (ProjectItem projItem in unitTestProject.ProjectItems)
+                                {
+                                    if (projItem.Name == "MutationCompiledUnits")
+                                    {
+                                        //remove it from the VS project
+                                        projItem.Remove();
+
+                                        //remove it from the disk also
+                                        var path = Path.Combine(Path.GetDirectoryName(unitTestProject.FullName), "MutationCompiledUnits");
+                                        Directory.Delete(path, true);
+                                        break;
+                                    }
+                                }
+                                unitTestProject.Save();
+                                solutionBuild2.BuildProject(solutionBuild2.ActiveConfiguration.Name,
+                                    unitTestProject.UniqueName, true);
+
+                                //delete all killed mutants since the code they mutated is properly tested
+                                //and save only the 'live' ones to highlight the not tested code
+                                foreach (ProjectItem projItem in selectedProject.ProjectItems)
+                                {
+                                    if (projItem.Name == "Mutants")
+                                    {
+                                        foreach(ProjectItem pi in projItem.ProjectItems)
+                                        {
+                                            var mutantName = pi.Name.Replace(".cs", "");
+                                            if(!liveMutants.Any(m => m.Name.Contains(mutantName)))
+                                            {
+                                                //remove it from the VS project
+                                                pi.Remove();
+
+                                                //remove it from the disk also
+                                                var path = Path.Combine(Path.GetDirectoryName(selectedProject.FullName),
+                                                    string.Format(@"{0}\\{1}", "Mutants", pi.Name));
+                                                File.Delete(path);
+                                            }
+                                        }
+                                        break;
+                                    }
+                                }
+                                selectedProject.Save();
+                                solutionBuild2.BuildProject(solutionBuild2.ActiveConfiguration.Name,
+                                    selectedProject.UniqueName, true);
+
+                                dte.ExecuteCommand("TestExplorer.ShowTestExplorer");
+                                dte.ExecuteCommand("TestExplorer.RunAllTests");
+                                 
+                                MessageBox.Show("Mutation testing Done. Please check the mutants in the selected" +
+                                    " project. Select the original file and the mutant in Solution Explorer, " +
+                                    "right click and press 'Test by mutation...'. This way you will see the untested " +
+                                    "areas in your code.",
+                                    "Mutation Testing Done.", MessageBoxButtons.OK, MessageBoxIcon.Information);
                             }
                             else
                             {
@@ -155,13 +207,13 @@ namespace MTOOS.Extension
             }
         }
 
-        private void RunTheMutatedUnitTestsUsingNUnitConsole(Project unitTestProject, DTE2 dte)
+        private List<Mutant> RunTheMutatedUnitTestsUsingNUnitConsole(Project unitTestProject, DTE2 dte)
         {
             var unitTestAssemblyPath = GetAssemblyPath(unitTestProject);
             string solutionDir = Path.GetDirectoryName(dte.Solution.FullName);
             var packagesFolder = Path.Combine(solutionDir, "packages");
             var NUnitConsolePath = Path.Combine(packagesFolder, 
-                "NUnit.ConsoleRunner.3.8.0\\tools\\nunit3-console.exe");
+                "NUnit.ConsoleRunner.3.8.0\\tools\\nunit3-console.exe"); // TODO: avoid the version dependency!!
             var nunitOutputFilePath = Path.GetDirectoryName(unitTestAssemblyPath);
 
             var processStartInfo = new ProcessStartInfo
@@ -174,7 +226,8 @@ namespace MTOOS.Extension
 
             try
             {
-                using (System.Diagnostics.Process exeProcess = System.Diagnostics.Process.Start(processStartInfo))
+                using (System.Diagnostics.Process exeProcess = 
+                    System.Diagnostics.Process.Start(processStartInfo))
                 {
                     exeProcess.WaitForExit();
                 }
@@ -187,21 +240,18 @@ namespace MTOOS.Extension
             var NUnitResultXmlFilePath = Path.Combine(Path.GetDirectoryName(
                         GetAssemblyPath(unitTestProject)), "TestResult.xml");
 
+            List<Mutant> liveMutants = new List<Mutant>();
             if (File.Exists(NUnitResultXmlFilePath))
             {
-                List<string> mutationAnalysis = AnalyzeNUnitTestResultFile(NUnitResultXmlFilePath);
-                StringBuilder sb = new StringBuilder();
-                foreach (string m in mutationAnalysis)
-                {
-                    sb.AppendLine(m);
-                }
-                MessageBox.Show(sb.ToString());
+                liveMutants = AnalyzeNUnitTestResultFile(NUnitResultXmlFilePath);
             }
+
+            return liveMutants;
         }
 
-        private List<string> AnalyzeNUnitTestResultFile(string nUnitResultXmlFilePath)
+        private List<Mutant> AnalyzeNUnitTestResultFile(string nUnitResultXmlFilePath)
         {
-            List<string> mutationAnalysis = new List<string>();
+            List<Mutant> mutationAnalysis = new List<Mutant>();
             XmlDocument xmlDocument = new XmlDocument();
             xmlDocument.Load(nUnitResultXmlFilePath);
 
@@ -215,9 +265,15 @@ namespace MTOOS.Extension
                 {
                     if (testFixtureNode.Attributes["name"].Value.Contains("Mutant"))
                     {
-                        mutationAnalysis.Add(string.Format("{0} mutant is {1}",
-                            testFixtureNode.Attributes["name"].Value,
-                            testFixtureNode.Attributes["result"].Value == "Failed" ? "killed" : "live"));
+                        if (testFixtureNode.Attributes["result"].Value == "Passed")
+                        {
+                            mutationAnalysis.Add(new Mutant()
+                            {
+                                Id = Guid.NewGuid(),
+                                Name = testFixtureNode.Attributes["name"].Value,
+                                Status = testFixtureNode.Attributes["result"].Value
+                            });
+                        }
                     }
                 }
             }

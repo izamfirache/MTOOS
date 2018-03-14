@@ -55,6 +55,7 @@
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="Helpers\RoslynSetupHelper.cs" />
+    <Compile Include="Models\Mutant.cs" />
     <Compile Include="MutationAnalysis\UnitTestSuiteMutator.cs" />
     <Compile Include="MutationTestingCommand.cs" />
     <Compile Include="MutationTestingCommandPackage.cs" />
