@@ -96,10 +96,11 @@ namespace MTOOS.Extension
 
                         if (dialogResult == DialogResult.Yes)
                         {
-                            dte.ExecuteCommand("CloseAll"); // rethink this !!
+                            //rethink this !! -- reload or rebuild solution/project
+                            dte.ExecuteCommand("CloseAll"); 
 
                             //TODO: to avoid messing up the original project with the mutants
-                            //create a new project with the mutation analysis
+                            //create a new project with the mutation analysis result
                             //compile that project and add the reference to the unit test mutated classes
 
                             //build the selected project in order for the new types to be visible
@@ -110,6 +111,8 @@ namespace MTOOS.Extension
                             bool compiledOK = (solutionBuild2.LastBuildInfo == 0);
                             if (compiledOK)
                             {
+                                //mutate the unit test classes in order to run the unit test suite using 
+                                //mutants instead of the original class
                                 Solution2 solution = (Solution2)dte.Solution;
                                 Project unitTestProject = GetUnitTestProject(solution);
                                 unitTestProject.ProjectItems.AddFolder("MutationCompiledUnits");
@@ -122,9 +125,6 @@ namespace MTOOS.Extension
                                     unitTestProject.UniqueName, true);
 
                                 dte.ExecuteCommand("CloseAll");
-
-                                var unitTestProjectPath = unitTestProject.ConfigurationManager.
-                                    ActiveConfiguration.Properties.Item("OutputPath").Value.ToString();
 
                                 List<Mutant> liveMutants = RunTheMutatedUnitTestsUsingNUnitConsole
                                     (unitTestProject, dte);
@@ -148,16 +148,16 @@ namespace MTOOS.Extension
                                 solutionBuild2.BuildProject(solutionBuild2.ActiveConfiguration.Name,
                                     unitTestProject.UniqueName, true);
 
-                                //delete all killed mutants since the code they mutated is properly tested
-                                //and save only the 'live' ones to highlight the not tested code
+                                //delete all 'killed' mutants since the code they mutated is properly tested
+                                //and save only the 'live' ones to highlight the untested code
                                 foreach (ProjectItem projItem in selectedProject.ProjectItems)
                                 {
                                     if (projItem.Name == "Mutants")
                                     {
-                                        foreach(ProjectItem pi in projItem.ProjectItems)
+                                        foreach (ProjectItem pi in projItem.ProjectItems)
                                         {
                                             var mutantName = pi.Name.Replace(".cs", "");
-                                            if(!liveMutants.Any(m => m.Name.Contains(mutantName)))
+                                            if (!liveMutants.Any(m => m.Name.Contains(mutantName)))
                                             {
                                                 //remove it from the VS project
                                                 pi.Remove();
@@ -193,7 +193,7 @@ namespace MTOOS.Extension
                     else
                     {
                         MessageBox.Show(string.Format("No mutants generated. " +
-                            "Might be a problem with the mutation process"));
+                            "Might be a problem with the mutation process."));
                     }
                 }
                 else

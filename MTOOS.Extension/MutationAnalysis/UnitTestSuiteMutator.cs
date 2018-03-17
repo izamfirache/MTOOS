@@ -3,6 +3,7 @@ using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 using MTOOS.Extension.Helpers;
+using MTOOS.Extension.Mutators;
 using MTOOS.Extension.TestMutators;
 using System;
 using System.Collections.Generic;
@@ -51,20 +52,16 @@ namespace MTOOS.Extension.MutationAnalysis
                         {
                             _mutatedClasses.TryGetValue(mutatedClassName, out string className);
 
-                            if (unitTestClassName.Contains(className)) // rethink this!!
+                            //rethink this!! -- determine which one is the unit test project
+                            if (unitTestClassName.Contains(className)) 
                             {
                                 var mutatedUnitTestClassName = string.Format("{0}UnitTestMutant", mutatedClassName);
                                 var unitTestClassMutator = new UnitTestClassMutator(className, mutatedClassName,
-                                    unitTestClassName,
-                                    mutatedUnitTestClassName);
+                                    unitTestClassName, mutatedUnitTestClassName);
                                 var mutatedUnitTestClassNsRoot = unitTestClassMutator.Visit(namespaceTreeRoot);
 
-                                CreateNewMutant(project, mutatedUnitTestClassNsRoot.ToFullString(),
+                                CreateNewUnitTestClassMutant(project, mutatedUnitTestClassNsRoot.ToFullString(),
                                     mutatedUnitTestClassName);
-
-                                //4-using NUnit test runner, run the mutated unit tests over the mutants
-
-                                //5-interpret the results using NUnit runner xml result file and save only the 'live' mutants
                             }
                         }
                     }
@@ -72,7 +69,7 @@ namespace MTOOS.Extension.MutationAnalysis
             }
         }
 
-        private void CreateNewMutant(EnvDTE.Project project, string mutatedCode, string mutatedClassName)
+        private void CreateNewUnitTestClassMutant(EnvDTE.Project project, string mutatedCode, string mutatedClassName)
         {
             string mutatedUnitTestClassPath = string.Format(@"{0}\{1}\{2}\{3}.cs",
                 Path.GetDirectoryName(_currentSolution.FileName), project.Name, 

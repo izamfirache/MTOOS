@@ -33,12 +33,14 @@ namespace MTOOS.Extension.MutationAnalysis
                 _roslynSetupHelper.CreateWorkspace(), _currentSolution.FileName);
             var projectAssembly = _roslynSetupHelper.GetProjectAssembly(
                 _roslynSetupHelper.GetProjectToAnalyze(solution, project.Name));
+            var projectSemanticModel = _roslynSetupHelper.GetProjectSemanticModel(
+                _roslynSetupHelper.GetProjectToAnalyze(solution, project.Name));
 
             foreach (var syntaxTree in projectAssembly.SyntaxTrees)
             {
                 var root = syntaxTree.GetRoot() as CompilationUnitSyntax;
                 var namespaces = root.DescendantNodes().OfType<NamespaceDeclarationSyntax>().ToList();
-
+                
                 foreach (NamespaceDeclarationSyntax ns in namespaces)
                 {
                     var namespaceClasses = ns.DescendantNodes().OfType<ClassDeclarationSyntax>().ToList();
@@ -46,18 +48,38 @@ namespace MTOOS.Extension.MutationAnalysis
 
                     if (namespaceClasses.Count != 0)
                     {
-                        var className = namespaceClasses.ElementAt(0).Identifier.Value.ToString();
+                        //TODO: do this for all classes from that namespace !
 
-                        //additive operators (+, -, /, *, %)
-                        var mathOperatorMutator = new AritmeticOperatorMutator(className, namespaceTreeRoot, project, _currentSolution);
+                        var className = namespaceClasses.ElementAt(0).Identifier.Value.ToString();
+                        var mutantCreator = new MutantCreator(_currentSolution, className, project);
+
+                        //apply additive and multiplicative mutations
+                        var mathOperatorMutator = new AdditiveAndMultiplicativeOp
+                            (namespaceTreeRoot, mutantCreator);
                         mathOperatorMutator.Visit(namespaceTreeRoot);
 
+                        //apply realtional and equity mutations
+                        var relationalAndEquityOp = new RelationalAndEqualityOp
+                            (namespaceTreeRoot, mutantCreator);
+                        relationalAndEquityOp.Visit(namespaceTreeRoot);
+
+                        //apply assignment expression mutation
+                        var assignmentExprMutator = new AssignmentExprMutator
+                            (namespaceTreeRoot, mutantCreator, projectSemanticModel);
+                        assignmentExprMutator.Visit(namespaceTreeRoot);
+
+                        ////apply this keyword statement deletion muttion
+                        //var thisKeywordStatementDeletion = new ThisKeywordStatementsDeletion
+                        //    (namespaceTreeRoot, mutantCreator);
+                        //thisKeywordStatementDeletion.Visit(namespaceTreeRoot);
+
                         MutatedClassNames = 
-                            MutatedClassNames.Concat(mathOperatorMutator.GetMutatedClasses())
+                            MutatedClassNames.Concat(mutantCreator.GetMutatedClasses())
                             .ToDictionary(x => x.Key, x => x.Value);
                     }
                 }
             }
+
             return MutatedClassNames;
         }
     }

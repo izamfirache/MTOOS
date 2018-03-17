@@ -37,5 +37,14 @@ namespace MTOOS.Extension.Helpers
             Compilation projectCompiledAssembly = project.GetCompilationAsync().Result;
             return projectCompiledAssembly;
         }
+
+        public SemanticModel GetProjectSemanticModel(Project project)
+        {
+            var document = project.Documents.First();
+            var rootNode = document.GetSyntaxRootAsync().Result;
+            var semanticModel = document.GetSemanticModelAsync().Result;
+
+            return semanticModel;
+        }
     }
 }

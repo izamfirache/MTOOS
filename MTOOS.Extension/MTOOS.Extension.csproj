@@ -59,8 +59,12 @@
     <Compile Include="MutationAnalysis\UnitTestSuiteMutator.cs" />
     <Compile Include="MutationTestingCommand.cs" />
     <Compile Include="MutationTestingCommandPackage.cs" />
+    <Compile Include="Mutators\AssignmentExprMutator.cs" />
     <Compile Include="Mutators\ClassIdentifierMutator.cs" />
-    <Compile Include="Mutators\AritmeticOperatorMutator.cs" />
+    <Compile Include="Mutators\AdditiveAndMultiplicativeOp.cs" />
+    <Compile Include="Mutators\MutantCreator.cs" />
+    <Compile Include="Mutators\RelationalAndEqualityOp.cs" />
+    <Compile Include="Mutators\ThisKeywordStatementsDeletion.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="MutationAnalysis\SourceCodeMutator.cs" />
     <Compile Include="TestMutators\UnitTestClassMutator.cs" />
