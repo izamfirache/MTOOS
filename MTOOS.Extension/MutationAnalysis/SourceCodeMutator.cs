@@ -49,7 +49,7 @@ namespace MTOOS.Extension.MutationAnalysis
                     if (namespaceClasses.Count != 0)
                     {
                         //TODO: do this for all classes from that namespace !
-
+                        
                         var className = namespaceClasses.ElementAt(0).Identifier.Value.ToString();
                         var mutantCreator = new MutantCreator(_currentSolution, className, project);
 
@@ -68,10 +68,20 @@ namespace MTOOS.Extension.MutationAnalysis
                             (namespaceTreeRoot, mutantCreator, projectSemanticModel);
                         assignmentExprMutator.Visit(namespaceTreeRoot);
 
-                        ////apply this keyword statement deletion muttion
-                        //var thisKeywordStatementDeletion = new ThisKeywordStatementsDeletion
-                        //    (namespaceTreeRoot, mutantCreator);
-                        //thisKeywordStatementDeletion.Visit(namespaceTreeRoot);
+                        //apply this keyword statement deletion muttion
+                        var classFields = namespaceClasses.ElementAt(0)
+                            .DescendantNodes().OfType<FieldDeclarationSyntax>().ToList();
+                        var classFieldsIdentifiers = new List<string>();
+
+                        foreach (FieldDeclarationSyntax field in classFields)
+                        {
+                            classFieldsIdentifiers.Add(
+                                field.Declaration.Variables.First().Identifier.ToString());
+                        }
+
+                        var thisKeywordStatementDeletion = new ThisStatementDeletion
+                            (namespaceTreeRoot, mutantCreator, classFieldsIdentifiers);
+                        thisKeywordStatementDeletion.Visit(namespaceTreeRoot);
 
                         MutatedClassNames = 
                             MutatedClassNames.Concat(mutantCreator.GetMutatedClasses())

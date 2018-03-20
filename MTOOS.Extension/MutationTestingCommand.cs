@@ -177,7 +177,7 @@ namespace MTOOS.Extension
 
                                 dte.ExecuteCommand("TestExplorer.ShowTestExplorer");
                                 dte.ExecuteCommand("TestExplorer.RunAllTests");
-                                 
+
                                 MessageBox.Show("Mutation testing Done. Please check the mutants in the selected" +
                                     " project. Select the original file and the mutant in Solution Explorer, " +
                                     "right click and press 'Test by mutation...'. This way you will see the untested " +

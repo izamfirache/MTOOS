@@ -16,7 +16,6 @@ namespace MTOOS.Extension.Mutators
     {
         private SyntaxNode _namespaceRootNode;
         private MutantCreator _mutantCreator;
-        private Dictionary<string, string> MutatedClassNames;
 
         public AdditiveAndMultiplicativeOp(SyntaxNode namespaceRootNode, MutantCreator mutantCreator)
         {
@@ -32,6 +31,7 @@ namespace MTOOS.Extension.Mutators
                     .WithTrailingTrivia(SyntaxFactory.Space);
             }
             
+            //TODO: exclude string concatenation
             if (token.IsKind(SyntaxKind.PlusToken))
             {
                 newToken = SyntaxFactory.Token(SyntaxKind.MinusToken)
