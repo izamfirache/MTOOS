@@ -1,6 +1,8 @@
 ﻿namespace MTOOS.Extension
 {
+    using EnvDTE80;
     using MTOOS.Extension.Models;
+    using System;
     using System.Collections.Generic;
     using System.Diagnostics.CodeAnalysis;
     using System.Windows;
@@ -11,7 +13,7 @@
     /// </summary>
     public partial class MutantKillerWindowControl : UserControl
     {
-        public Dictionary<string, bool> CheckedOptions;
+        public List<string> CheckedOptions;
         public List<Mutant> GeneratedMutantList;
 
         /// <summary>
@@ -29,33 +31,35 @@
         /// <param name="e">The event args.</param>
         [SuppressMessage("Microsoft.Globalization", "CA1300:SpecifyMessageBoxOptions", Justification = "Sample code")]
         [SuppressMessage("StyleCop.CSharp.NamingRules", "SA1300:ElementMustBeginWithUpperCaseLetter", Justification = "Default event handler naming pattern")]
-        private void StartMutationTesting(object sender, RoutedEventArgs e)
+        public void StartMutationTesting(object sender, RoutedEventArgs e)
         {
-            CheckedOptions = new Dictionary<string, bool>()
+            CheckedOptions = GetCheckedOptions();
+
+            if (CheckedOptions.Count != 0)
             {
-                {
-                    AdditiveAndMultiplicativeOp.Name,
-                    AdditiveAndMultiplicativeOp.IsChecked == true
-                },
-                {
-                    AssignmentExprMutator.Name,
-                    AssignmentExprMutator.IsChecked == true
-                },
-                {
-                    RelationalAndEqualityOp.Name,
-                    RelationalAndEqualityOp.IsChecked == true
-                },
-                {
-                    ThisStatementDeletion.Name,
-                    ThisStatementDeletion.IsChecked == true
-                }
-            };
+                var dte = (DTE2)Microsoft.VisualStudio.Shell.ServiceProvider
+                    .GlobalProvider.GetService(typeof(EnvDTE.DTE));
 
-            MessageBox.Show(
-                string.Format(System.Globalization.CultureInfo.CurrentUICulture, "Invoked '{0}'", this.ToString()),
-                "MutantKillerWindow");
+                MutationTestingManager mutationTestingManager = new MutationTestingManager();
+                MutantList.ItemsSource = mutationTestingManager
+                    .PerformMutationTestingOnProject(dte, CheckedOptions);
+            }
+            else
+            {
+                MessageBox.Show("Please check the mutations you want to perform.", 
+                    "No options checked.", MessageBoxButton.OK, MessageBoxImage.Warning);
+            }
+        }
 
-            //MutantList.ItemsSource = items;
+        private List<string> GetCheckedOptions()
+        {
+            var checkedOptions = new List<string>();
+            if (AdditiveAndMultiplicativeOp.IsChecked == true) { checkedOptions.Add("1"); }
+            if (AssignmentExprMutator.IsChecked == true) { checkedOptions.Add("2"); }
+            if (RelationalAndEqualityOp.IsChecked == true) { checkedOptions.Add("2"); }
+            if (ThisStatementDeletion.IsChecked == true) { checkedOptions.Add("2"); }
+
+            return checkedOptions;
         }
     }
 }

@@ -26,7 +26,7 @@ namespace MTOOS.Extension.MutationAnalysis
             _roslynSetupHelper = new RoslynSetupHelper();
         }
 
-        public Dictionary<string, string> PerformMutationAnalysisOnProject(EnvDTE.Project project)
+        public Dictionary<string, string> PerformMutationAnalysisOnProject(EnvDTE.Project project, List<string> options)
         {
             var MutatedClassNames = new Dictionary<string, string>();
             var solution = _roslynSetupHelper.GetSolutionToAnalyze(
@@ -53,35 +53,47 @@ namespace MTOOS.Extension.MutationAnalysis
                         var className = namespaceClasses.ElementAt(0).Identifier.Value.ToString();
                         var mutantCreator = new MutantCreator(_currentSolution, className, project);
 
-                        //apply additive and multiplicative mutations
-                        var mathOperatorMutator = new AdditiveAndMultiplicativeOp
-                            (namespaceTreeRoot, mutantCreator);
-                        mathOperatorMutator.Visit(namespaceTreeRoot);
-
-                        //apply realtional and equity mutations
-                        var relationalAndEquityOp = new RelationalAndEqualityOp
-                            (namespaceTreeRoot, mutantCreator);
-                        relationalAndEquityOp.Visit(namespaceTreeRoot);
-
-                        //apply assignment expression mutation
-                        var assignmentExprMutator = new AssignmentExprMutator
-                            (namespaceTreeRoot, mutantCreator, projectSemanticModel);
-                        assignmentExprMutator.Visit(namespaceTreeRoot);
-
-                        //apply this keyword statement deletion muttion
-                        var classFields = namespaceClasses.ElementAt(0)
-                            .DescendantNodes().OfType<FieldDeclarationSyntax>().ToList();
-                        var classFieldsIdentifiers = new List<string>();
-
-                        foreach (FieldDeclarationSyntax field in classFields)
+                        if (options.Contains("1"))
                         {
-                            classFieldsIdentifiers.Add(
-                                field.Declaration.Variables.First().Identifier.ToString());
+                            //apply additive and multiplicative mutations
+                            var mathOperatorMutator = new AdditiveAndMultiplicativeOp
+                                (namespaceTreeRoot, mutantCreator);
+                            mathOperatorMutator.Visit(namespaceTreeRoot);
                         }
 
-                        var thisKeywordStatementDeletion = new ThisStatementDeletion
-                            (namespaceTreeRoot, mutantCreator, classFieldsIdentifiers);
-                        thisKeywordStatementDeletion.Visit(namespaceTreeRoot);
+                        if (options.Contains("2"))
+                        {
+                            //apply realtional and equity mutations
+                            var relationalAndEquityOp = new RelationalAndEqualityOp
+                            (namespaceTreeRoot, mutantCreator);
+                            relationalAndEquityOp.Visit(namespaceTreeRoot);
+                        }
+
+                        if (options.Contains("3"))
+                        {
+                            //apply assignment expression mutation
+                            var assignmentExprMutator = new AssignmentExprMutator
+                            (namespaceTreeRoot, mutantCreator, projectSemanticModel);
+                            assignmentExprMutator.Visit(namespaceTreeRoot);
+                        }
+
+                        if (options.Contains("4"))
+                        {
+                            //apply this keyword statement deletion muttion
+                            var classFields = namespaceClasses.ElementAt(0)
+                            .DescendantNodes().OfType<FieldDeclarationSyntax>().ToList();
+
+                            var classFieldsIdentifiers = new List<string>();
+                            foreach (FieldDeclarationSyntax field in classFields)
+                            {
+                                classFieldsIdentifiers.Add(
+                                    field.Declaration.Variables.First().Identifier.ToString());
+                            }
+
+                            var thisKeywordStatementDeletion = new ThisStatementDeletion
+                                (namespaceTreeRoot, mutantCreator, classFieldsIdentifiers);
+                            thisKeywordStatementDeletion.Visit(namespaceTreeRoot);
+                        }
 
                         MutatedClassNames = 
                             MutatedClassNames.Concat(mutantCreator.GetMutatedClasses())

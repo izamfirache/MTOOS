@@ -64,6 +64,7 @@
     <Compile Include="MutationAnalysis\UnitTestSuiteMutator.cs" />
     <Compile Include="MutationTestingCommand.cs" />
     <Compile Include="MutationTestingCommandPackage.cs" />
+    <Compile Include="MutationTestingManager.cs" />
     <Compile Include="Mutators\AssignmentExprMutator.cs" />
     <Compile Include="Mutators\ClassIdentifierMutator.cs" />
     <Compile Include="Mutators\AdditiveAndMultiplicativeOp.cs" />

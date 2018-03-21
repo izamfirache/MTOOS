@@ -22,7 +22,7 @@
         <CheckBox x:Name="AssignmentExprMutator" Content="Mutate assignment expressions" HorizontalAlignment="Left" Margin="29,139,0,0" VerticalAlignment="Top" Grid.ColumnSpan="3" Width="288"/>
         <CheckBox x:Name="RelationalAndEqualityOp" Content="Mutate relational and equality operators" HorizontalAlignment="Left" Margin="29,159,0,0" VerticalAlignment="Top" Grid.ColumnSpan="2" Width="257"/>
         <CheckBox x:Name="ThisStatementDeletion" Content="Delete 'this' statements" HorizontalAlignment="Left" Margin="29,179,0,0" VerticalAlignment="Top" Grid.ColumnSpan="2" Width="165"/>
-        <ListView x:Name="MutantList" Grid.Column="2" HorizontalAlignment="Left" Height="339" Margin="93.964,94,0,0" VerticalAlignment="Top" Width="218">
+        <ListView x:Name="MutantList" Grid.Column="2" HorizontalAlignment="Left" Height="339" Margin="94,94,0,0" VerticalAlignment="Top" Width="277">
             <ListView.View>
                 <GridView>
                     <GridViewColumn/>
