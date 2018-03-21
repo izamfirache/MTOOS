@@ -54,13 +54,56 @@
         [SuppressMessage("StyleCop.CSharp.NamingRules", "SA1300:ElementMustBeginWithUpperCaseLetter", Justification = "Default event handler naming pattern")]
         public void StartMutationTesting(object sender, RoutedEventArgs e)
         {
-            CheckedOptions = GetCheckedOptions();
-
-            if (CheckedOptions.Count != 0)
-            {
-                var dte = (DTE2)Microsoft.VisualStudio.Shell.ServiceProvider
+            var dte = (DTE2)Microsoft.VisualStudio.Shell.ServiceProvider
                     .GlobalProvider.GetService(typeof(EnvDTE.DTE));
 
+            var projects = new List<ProjectPresentation>();
+            foreach (var item in solutionProjectList.SelectedItems)
+            {
+                var selectedProject = (ProjectPresentation)item;
+                selectedProject.IsSelected = true;
+                projects.Add(selectedProject);
+            }
+
+            Project sourceCodeProject;
+            Project unitTestProject;
+
+            if (projects.Count == 2)
+            {
+                foreach (ProjectPresentation p in projects)
+                {
+                    if (p.Type == "SourceCode")
+                    {
+                        foreach (Project sp in dte.Solution.Projects)
+                        {
+                            if (sp.Name == p.Name)
+                            {
+                                sourceCodeProject = sp;
+                            }
+                        }
+                    }
+                    else
+                    {
+                        foreach (Project sp in dte.Solution.Projects)
+                        {
+                            if (sp.Name == p.Name)
+                            {
+                                unitTestProject = sp;
+                            }
+                        }
+                    }
+                }
+            }
+            else
+            {
+                MessageBox.Show("Please check a source code project and a unit test project before starting mutation testing.",
+                    "No projects selected", MessageBoxButton.OK, MessageBoxImage.Warning);
+            }
+
+            CheckedOptions = GetCheckedOptions();
+
+            if (CheckedOptions.Count != 0 && projects.Count == 2)
+            {
                 MutationTestingManager mutationTestingManager = new MutationTestingManager();
                 //MutantList.ItemsSource = mutationTestingManager
                 //    .PerformMutationTestingOnProject(dte, "", CheckedOptions);
