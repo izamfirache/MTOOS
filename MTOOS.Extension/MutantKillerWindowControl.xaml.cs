@@ -1,8 +1,10 @@
 ﻿namespace MTOOS.Extension
 {
+    using EnvDTE;
     using EnvDTE80;
     using MTOOS.Extension.Models;
     using System;
+    using System.Collections;
     using System.Collections.Generic;
     using System.Diagnostics.CodeAnalysis;
     using System.Windows;
@@ -22,6 +24,25 @@
         public MutantKillerWindowControl()
         {
             this.InitializeComponent();
+            solutionProjectList.ItemsSource = GetSolutionProjects();
+        }
+
+        private List<ProjectPresentation> GetSolutionProjects()
+        {
+            var projects = new List<ProjectPresentation>();
+            var dte = (DTE2)Microsoft.VisualStudio.Shell.ServiceProvider
+                    .GlobalProvider.GetService(typeof(EnvDTE.DTE));
+
+            foreach(Project p in dte.Solution.Projects)
+            {
+                projects.Add(new ProjectPresentation()
+                {
+                    Name = p.Name,
+                    Type = p.Name.Contains("UnitTest") ? "UnitTest" : "SourceCode"
+                });
+            }
+
+            return projects;
         }
 
         /// <summary>
@@ -41,8 +62,8 @@
                     .GlobalProvider.GetService(typeof(EnvDTE.DTE));
 
                 MutationTestingManager mutationTestingManager = new MutationTestingManager();
-                MutantList.ItemsSource = mutationTestingManager
-                    .PerformMutationTestingOnProject(dte, CheckedOptions);
+                //MutantList.ItemsSource = mutationTestingManager
+                //    .PerformMutationTestingOnProject(dte, "", CheckedOptions);
             }
             else
             {
