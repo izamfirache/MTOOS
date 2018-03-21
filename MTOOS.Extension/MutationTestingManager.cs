@@ -21,17 +21,18 @@ namespace MTOOS.Extension
 {
     public class MutationTestingManager
     {
-        public List<Mutant> PerformMutationTestingOnProject(DTE2 dte, Solution2 solution, string projectToAnalyze, 
-            List<string> options)
+        public List<Mutant> PerformMutationTestingOnProject(DTE2 dte, Project sourceCodeProject, 
+            Project unitTestProject, List<string> options)
         {
             var liveMutants = new List<Mutant>();
 
+            Solution2 solution = (Solution2)dte.Solution;
             var mutationAnalyzer = new SourceCodeMutator(solution);
-            Project selectedProject = GetSelectedProject(solution, projectToAnalyze);
-            selectedProject.ProjectItems.AddFolder("Mutants");
-            selectedProject.Save();
+            sourceCodeProject.ProjectItems.AddFolder("Mutants");
+            sourceCodeProject.Save();
             
-            var mutatedClasses = mutationAnalyzer.PerformMutationAnalysisOnProject(selectedProject, options);
+            var mutatedClasses = mutationAnalyzer.PerformMutationAnalysisOnProject
+                (sourceCodeProject, options);
             if (mutatedClasses.Count != 0)
             {
                 //rethink this !! -- reload or rebuild solution/project
@@ -42,20 +43,22 @@ namespace MTOOS.Extension
                 //compile that project and add the reference to the unit test mutated classes
 
                 //build the selected project in order for the new types to be visible
-                SolutionBuild2 solutionBuild2 = (SolutionBuild2)selectedProject.DTE.Solution.SolutionBuild;
+                SolutionBuild2 solutionBuild2 = (SolutionBuild2)sourceCodeProject.DTE.Solution.SolutionBuild;
                 solutionBuild2.BuildProject(solutionBuild2.ActiveConfiguration.Name,
-                    selectedProject.UniqueName, true);
+                    sourceCodeProject.UniqueName, true);
 
                 bool compiledOK = (solutionBuild2.LastBuildInfo == 0);
                 if (compiledOK)
                 {
-                    var mutatedUnitTestProject = MutateUnitTestProject(solution, solutionBuild2, mutatedClasses);
+                    var mutatedUnitTestProject = MutateUnitTestProject(solution, 
+                        solutionBuild2, mutatedClasses, unitTestProject);
 
                     dte.ExecuteCommand("CloseAll");
 
                     liveMutants = RunTheMutatedUnitTestsUsingNUnitConsole(mutatedUnitTestProject, dte);
 
-                    DeleteAllNonRelevantFiles(mutatedUnitTestProject, selectedProject, solutionBuild2, liveMutants);
+                    DeleteAllNonRelevantFiles(mutatedUnitTestProject, sourceCodeProject, 
+                        solutionBuild2, liveMutants);
 
                     dte.ExecuteCommand("TestExplorer.ShowTestExplorer");
                     dte.ExecuteCommand("TestExplorer.RunAllTests");
@@ -80,12 +83,9 @@ namespace MTOOS.Extension
             return liveMutants;
         }
 
-        
-
         private Project MutateUnitTestProject(Solution2 solution, SolutionBuild2 solutionBuild, 
-            Dictionary<string, string> mutatedClasses)
+            Dictionary<string, string> mutatedClasses, Project unitTestProject)
         {
-            Project unitTestProject = GetUnitTestProject(solution);
             unitTestProject.ProjectItems.AddFolder("MutationCompiledUnits");
             unitTestProject.Save();
 
@@ -96,18 +96,6 @@ namespace MTOOS.Extension
                 unitTestProject.UniqueName, true);
 
             return unitTestProject;
-        }
-
-        private Project GetSelectedProject(Solution2 solution, string projectName)
-        {
-            foreach (Project p in solution.Projects)
-            {
-                if (p.Name == projectName)
-                {
-                    return p;
-                }
-            }
-            return null;
         }
 
         private List<Mutant> RunTheMutatedUnitTestsUsingNUnitConsole(Project unitTestProject, DTE2 dte)

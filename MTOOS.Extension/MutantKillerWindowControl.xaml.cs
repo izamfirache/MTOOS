@@ -27,24 +27,6 @@
             solutionProjectList.ItemsSource = GetSolutionProjects();
         }
 
-        private List<ProjectPresentation> GetSolutionProjects()
-        {
-            var projects = new List<ProjectPresentation>();
-            var dte = (DTE2)Microsoft.VisualStudio.Shell.ServiceProvider
-                    .GlobalProvider.GetService(typeof(EnvDTE.DTE));
-
-            foreach(Project p in dte.Solution.Projects)
-            {
-                projects.Add(new ProjectPresentation()
-                {
-                    Name = p.Name,
-                    Type = p.Name.Contains("UnitTest") ? "UnitTest" : "SourceCode"
-                });
-            }
-
-            return projects;
-        }
-
         /// <summary>
         /// Handles click on the button by displaying a message box.
         /// </summary>
@@ -67,30 +49,24 @@
 
             Project sourceCodeProject;
             Project unitTestProject;
-
             if (projects.Count == 2)
             {
-                foreach (ProjectPresentation p in projects)
+                sourceCodeProject = GetSourceCodeProject(dte, projects);
+                unitTestProject = GetUnitTestProject(dte, projects);
+                if(sourceCodeProject != null && unitTestProject != null)
                 {
-                    if (p.Type == "SourceCode")
+                    CheckedOptions = GetCheckedOptions();
+                    if (CheckedOptions.Count != 0)
                     {
-                        foreach (Project sp in dte.Solution.Projects)
-                        {
-                            if (sp.Name == p.Name)
-                            {
-                                sourceCodeProject = sp;
-                            }
-                        }
+                        MutationTestingManager mutationTestingManager = new MutationTestingManager();
+                        MutantList.ItemsSource = mutationTestingManager
+                            .PerformMutationTestingOnProject(dte, sourceCodeProject, 
+                                unitTestProject, CheckedOptions);
                     }
                     else
                     {
-                        foreach (Project sp in dte.Solution.Projects)
-                        {
-                            if (sp.Name == p.Name)
-                            {
-                                unitTestProject = sp;
-                            }
-                        }
+                        MessageBox.Show("Please check the mutations you want to perform.",
+                            "No options checked.", MessageBoxButton.OK, MessageBoxImage.Warning);
                     }
                 }
             }
@@ -99,20 +75,61 @@
                 MessageBox.Show("Please check a source code project and a unit test project before starting mutation testing.",
                     "No projects selected", MessageBoxButton.OK, MessageBoxImage.Warning);
             }
+        }
 
-            CheckedOptions = GetCheckedOptions();
+        private Project GetUnitTestProject(DTE2 dte, List<ProjectPresentation> projects)
+        {
+            foreach (ProjectPresentation p in projects)
+            {
+                if (p.Type == "SourceCode")
+                {
+                    foreach (Project sp in dte.Solution.Projects)
+                    {
+                        if (sp.Name == p.Name)
+                        {
+                            return sp;
+                        }
+                    }
+                }
+            }
 
-            if (CheckedOptions.Count != 0 && projects.Count == 2)
+            return null;
+        }
+
+        private Project GetSourceCodeProject(DTE2 dte, List<ProjectPresentation> projects)
+        {
+            foreach (ProjectPresentation p in projects)
             {
-                MutationTestingManager mutationTestingManager = new MutationTestingManager();
-                //MutantList.ItemsSource = mutationTestingManager
-                //    .PerformMutationTestingOnProject(dte, "", CheckedOptions);
+                if (p.Type == "UnitTest")
+                {
+                    foreach (Project sp in dte.Solution.Projects)
+                    {
+                        if (sp.Name == p.Name)
+                        {
+                            return sp;
+                        }
+                    }
+                }
             }
-            else
+            return null;
+        }
+
+        private List<ProjectPresentation> GetSolutionProjects()
+        {
+            var projects = new List<ProjectPresentation>();
+            var dte = (DTE2)Microsoft.VisualStudio.Shell.ServiceProvider
+                    .GlobalProvider.GetService(typeof(EnvDTE.DTE));
+
+            foreach (Project p in dte.Solution.Projects)
             {
-                MessageBox.Show("Please check the mutations you want to perform.", 
-                    "No options checked.", MessageBoxButton.OK, MessageBoxImage.Warning);
+                projects.Add(new ProjectPresentation()
+                {
+                    Name = p.Name,
+                    Type = p.Name.Contains("UnitTest") ? "UnitTest" : "SourceCode"
+                });
             }
+
+            return projects;
         }
 
         private List<string> GetCheckedOptions()
