@@ -34,6 +34,7 @@ namespace MTOOS.Extension
     [ProvideMenuResource("Menus.ctmenu", 1)]
     [Guid(MutationTestingCommandPackage.PackageGuidString)]
     [SuppressMessage("StyleCop.CSharp.DocumentationRules", "SA1650:ElementDocumentationMustBeSpelledCorrectly", Justification = "pkgdef, VS and vsixmanifest are valid VS terms")]
+    [ProvideToolWindow(typeof(MTOOS.Extension.MutantKillerWindow))]
     public sealed class MutationTestingCommandPackage : Package
     {
         /// <summary>
@@ -62,6 +63,7 @@ namespace MTOOS.Extension
         {
             MutationTestingCommand.Initialize(this);
             base.Initialize();
+            MTOOS.Extension.MutantKillerWindowCommand.Initialize(this);
         }
 
         #endregion
