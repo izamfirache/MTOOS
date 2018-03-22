@@ -3,6 +3,7 @@
     using EnvDTE;
     using EnvDTE80;
     using MTOOS.Extension.Models;
+    using MTOOS.Extension.Views;
     using System;
     using System.Collections;
     using System.Collections.Generic;
@@ -15,8 +16,8 @@
     /// </summary>
     public partial class MutantKillerWindowControl : UserControl
     {
-        public List<string> CheckedOptions;
-        public List<Mutant> GeneratedMutantList;
+        private MutationAnalysisView _mutationAnalysisView;
+        private CompareView _compareView;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="MutantKillerWindowControl"/> class.
@@ -24,123 +25,32 @@
         public MutantKillerWindowControl()
         {
             this.InitializeComponent();
-            solutionProjectList.ItemsSource = GetSolutionProjects();
+            _mutationAnalysisView = new MutationAnalysisView();
+            content.Content = _mutationAnalysisView; // set the default view
         }
 
-        /// <summary>
-        /// Handles click on the button by displaying a message box.
-        /// </summary>
-        /// <param name="sender">The event sender.</param>
-        /// <param name="e">The event args.</param>
-        [SuppressMessage("Microsoft.Globalization", "CA1300:SpecifyMessageBoxOptions", Justification = "Sample code")]
-        [SuppressMessage("StyleCop.CSharp.NamingRules", "SA1300:ElementMustBeginWithUpperCaseLetter", Justification = "Default event handler naming pattern")]
-        public void StartMutationTesting(object sender, RoutedEventArgs e)
+        private void MutationAnalysisItem_Click(object sender, RoutedEventArgs e)
         {
-            var dte = (DTE2)Microsoft.VisualStudio.Shell.ServiceProvider
-                    .GlobalProvider.GetService(typeof(EnvDTE.DTE));
+            content.Content = _mutationAnalysisView;
+        }
 
-            var projects = new List<ProjectPresentation>();
-            foreach (var item in solutionProjectList.SelectedItems)
+        private void CompareItem_Click(object sender, RoutedEventArgs e)
+        {
+            if(_mutationAnalysisView.GeneratedMutantList.Count != 0)
             {
-                var selectedProject = (ProjectPresentation)item;
-                selectedProject.IsSelected = true;
-                projects.Add(selectedProject);
-            }
-
-            Project sourceCodeProject;
-            Project unitTestProject;
-            if (projects.Count == 2)
-            {
-                sourceCodeProject = GetSourceCodeProject(dte, projects);
-                unitTestProject = GetUnitTestProject(dte, projects);
-                if(sourceCodeProject != null && unitTestProject != null)
-                {
-                    CheckedOptions = GetCheckedOptions();
-                    if (CheckedOptions.Count != 0)
-                    {
-                        MutationTestingManager mutationTestingManager = new MutationTestingManager();
-                        MutantList.ItemsSource = mutationTestingManager
-                            .PerformMutationTestingOnProject(dte, sourceCodeProject, 
-                                unitTestProject, CheckedOptions);
-                    }
-                    else
-                    {
-                        MessageBox.Show("Please check the mutations you want to perform.",
-                            "No options checked.", MessageBoxButton.OK, MessageBoxImage.Warning);
-                    }
-                }
+                _compareView = new CompareView(_mutationAnalysisView.GeneratedMutantList);
+                content.Content = _compareView;
             }
             else
             {
-                MessageBox.Show("Please check a source code project and a unit test project before starting mutation testing.",
-                    "No projects selected", MessageBoxButton.OK, MessageBoxImage.Warning);
+                _compareView = new CompareView(new List<Mutant>());
+                content.Content = _compareView;
             }
         }
 
-        private Project GetUnitTestProject(DTE2 dte, List<ProjectPresentation> projects)
+        private void MenuItem_MouseRightButtonDown(object sender, System.Windows.Input.MouseButtonEventArgs e)
         {
-            foreach (ProjectPresentation p in projects)
-            {
-                if (p.Type == "SourceCode")
-                {
-                    foreach (Project sp in dte.Solution.Projects)
-                    {
-                        if (sp.Name == p.Name)
-                        {
-                            return sp;
-                        }
-                    }
-                }
-            }
 
-            return null;
-        }
-
-        private Project GetSourceCodeProject(DTE2 dte, List<ProjectPresentation> projects)
-        {
-            foreach (ProjectPresentation p in projects)
-            {
-                if (p.Type == "UnitTest")
-                {
-                    foreach (Project sp in dte.Solution.Projects)
-                    {
-                        if (sp.Name == p.Name)
-                        {
-                            return sp;
-                        }
-                    }
-                }
-            }
-            return null;
-        }
-
-        private List<ProjectPresentation> GetSolutionProjects()
-        {
-            var projects = new List<ProjectPresentation>();
-            var dte = (DTE2)Microsoft.VisualStudio.Shell.ServiceProvider
-                    .GlobalProvider.GetService(typeof(EnvDTE.DTE));
-
-            foreach (Project p in dte.Solution.Projects)
-            {
-                projects.Add(new ProjectPresentation()
-                {
-                    Name = p.Name,
-                    Type = p.Name.Contains("UnitTest") ? "UnitTest" : "SourceCode"
-                });
-            }
-
-            return projects;
-        }
-
-        private List<string> GetCheckedOptions()
-        {
-            var checkedOptions = new List<string>();
-            if (AdditiveAndMultiplicativeOp.IsChecked == true) { checkedOptions.Add("1"); }
-            if (AssignmentExprMutator.IsChecked == true) { checkedOptions.Add("2"); }
-            if (RelationalAndEqualityOp.IsChecked == true) { checkedOptions.Add("2"); }
-            if (ThisStatementDeletion.IsChecked == true) { checkedOptions.Add("2"); }
-
-            return checkedOptions;
         }
     }
 }

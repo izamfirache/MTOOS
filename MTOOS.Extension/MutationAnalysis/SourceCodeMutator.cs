@@ -13,6 +13,8 @@ using System.Threading.Tasks;
 using System.Windows.Forms;
 using EnvDTE80;
 using MTOOS.Extension.Helpers;
+using MTOOS.Extension.Models;
+using Microsoft.CodeAnalysis.Formatting;
 
 namespace MTOOS.Extension.MutationAnalysis
 {
@@ -26,11 +28,12 @@ namespace MTOOS.Extension.MutationAnalysis
             _roslynSetupHelper = new RoslynSetupHelper();
         }
 
-        public Dictionary<string, string> PerformMutationAnalysisOnProject(EnvDTE.Project project, List<string> options)
+        public List<MutationInformation> PerformMutationAnalysisOnProject(EnvDTE.Project project, List<string> options)
         {
-            var MutatedClassNames = new Dictionary<string, string>();
+            var MutatedClassNames = new List<MutationInformation>();
+            var workspace = _roslynSetupHelper.CreateWorkspace();
             var solution = _roslynSetupHelper.GetSolutionToAnalyze(
-                _roslynSetupHelper.CreateWorkspace(), _currentSolution.FileName);
+                workspace, _currentSolution.FileName);
             var projectAssembly = _roslynSetupHelper.GetProjectAssembly(
                 _roslynSetupHelper.GetProjectToAnalyze(solution, project.Name));
             var projectSemanticModel = _roslynSetupHelper.GetProjectSemanticModel(
@@ -51,7 +54,7 @@ namespace MTOOS.Extension.MutationAnalysis
                         //TODO: do this for all classes from that namespace !
                         
                         var className = namespaceClasses.ElementAt(0).Identifier.Value.ToString();
-                        var mutantCreator = new MutantCreator(_currentSolution, className, project);
+                        var mutantCreator = new MutantCreator(_currentSolution, className, project, namespaceTreeRoot, workspace);
 
                         if (options.Contains("1"))
                         {
@@ -63,18 +66,18 @@ namespace MTOOS.Extension.MutationAnalysis
 
                         if (options.Contains("2"))
                         {
-                            //apply realtional and equity mutations
-                            var relationalAndEquityOp = new RelationalAndEqualityOp
-                            (namespaceTreeRoot, mutantCreator);
-                            relationalAndEquityOp.Visit(namespaceTreeRoot);
-                        }
-
-                        if (options.Contains("3"))
-                        {
                             //apply assignment expression mutation
                             var assignmentExprMutator = new AssignmentExprMutator
                             (namespaceTreeRoot, mutantCreator, projectSemanticModel);
                             assignmentExprMutator.Visit(namespaceTreeRoot);
+                        }
+
+                        if (options.Contains("3"))
+                        {
+                            //apply realtional and equity mutations
+                            var relationalAndEquityOp = new RelationalAndEqualityOp
+                            (namespaceTreeRoot, mutantCreator);
+                            relationalAndEquityOp.Visit(namespaceTreeRoot);
                         }
 
                         if (options.Contains("4"))
@@ -95,9 +98,7 @@ namespace MTOOS.Extension.MutationAnalysis
                             thisKeywordStatementDeletion.Visit(namespaceTreeRoot);
                         }
 
-                        MutatedClassNames = 
-                            MutatedClassNames.Concat(mutantCreator.GetMutatedClasses())
-                            .ToDictionary(x => x.Key, x => x.Value);
+                        MutatedClassNames.AddRange(mutantCreator.GetMutatedClasses());
                     }
                 }
             }

@@ -3,6 +3,7 @@ using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 using MTOOS.Extension.Helpers;
+using MTOOS.Extension.Models;
 using MTOOS.Extension.Mutators;
 using MTOOS.Extension.TestMutators;
 using System;
@@ -19,8 +20,8 @@ namespace MTOOS.Extension.MutationAnalysis
     {
         private Solution2 _currentSolution;
         private RoslynSetupHelper _roslynSetupHelper;
-        private Dictionary<string, string> _mutatedClasses;
-        public UnitTestSuiteMutator(Solution2 currentSolution, Dictionary<string, string> mutatedClasses)
+        private List<MutationInformation> _mutatedClasses;
+        public UnitTestSuiteMutator(Solution2 currentSolution, List<MutationInformation> mutatedClasses)
         {
             _currentSolution = currentSolution;
             _roslynSetupHelper = new RoslynSetupHelper();
@@ -48,15 +49,13 @@ namespace MTOOS.Extension.MutationAnalysis
                     {
                         var unitTestClassName = namespaceClasses.ElementAt(0).Identifier.Value.ToString();
 
-                        foreach (string mutatedClassName in _mutatedClasses.Keys)
+                        foreach (MutationInformation mi in _mutatedClasses)
                         {
-                            _mutatedClasses.TryGetValue(mutatedClassName, out string className);
-
                             //rethink this!! -- determine which one is the unit test project
-                            if (unitTestClassName.Contains(className)) 
+                            if (unitTestClassName.Contains(mi.ClassName)) 
                             {
-                                var mutatedUnitTestClassName = string.Format("{0}UnitTestMutant", mutatedClassName);
-                                var unitTestClassMutator = new UnitTestClassMutator(className, mutatedClassName,
+                                var mutatedUnitTestClassName = string.Format("{0}UnitTestMutant", mi.MutantName);
+                                var unitTestClassMutator = new UnitTestClassMutator(mi.ClassName, mi.MutantName,
                                     unitTestClassName, mutatedUnitTestClassName);
                                 var mutatedUnitTestClassNsRoot = unitTestClassMutator.Visit(namespaceTreeRoot);
 

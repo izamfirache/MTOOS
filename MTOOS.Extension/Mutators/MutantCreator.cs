@@ -1,5 +1,8 @@
 ﻿using EnvDTE80;
 using Microsoft.CodeAnalysis;
+using Microsoft.CodeAnalysis.Formatting;
+using Microsoft.CodeAnalysis.MSBuild;
+using MTOOS.Extension.Models;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -11,17 +14,22 @@ namespace MTOOS.Extension.Mutators
 {
     public class MutantCreator
     {
-        private Dictionary<string, string> MutatedClassNames;
+        private List<MutationInformation> MutatedClassNames;
         private Solution2 _currentSolution;
         private string _className;
         private EnvDTE.Project _project;
         private int _mutantVersion = 0;
-        public MutantCreator(Solution2 currentSolution, string className, EnvDTE.Project project)
+        private SyntaxNode _originalRootNode;
+        private MSBuildWorkspace _workspace;
+        public MutantCreator(Solution2 currentSolution, string className, EnvDTE.Project project, SyntaxNode originalRootNode,
+            MSBuildWorkspace workspace)
         {
             _currentSolution = currentSolution;
             _className = className;
             _project = project;
-            MutatedClassNames = new Dictionary<string, string>();
+            MutatedClassNames = new List<MutationInformation>();
+            _originalRootNode = originalRootNode;
+            _workspace = workspace;
         }
 
         public void CreateNewMutant(SyntaxNode mutatedNamespaceRoot)
@@ -44,7 +52,13 @@ namespace MTOOS.Extension.Mutators
                 {
                     projItem.ProjectItems.AddFromTemplate(classTemplatePath, string.Format("{0}.cs", 
                         mutatedClassName));
-                    MutatedClassNames.Add(mutatedClassName, _className);
+                    MutatedClassNames.Add(new MutationInformation()
+                    {
+                        ClassName = _className,
+                        MutantName = mutatedClassName,
+                        MutatedCode = Formatter.Format(finalMutantCodeRoot, _workspace).ToFullString(),
+                        OriginalProgramCode = Formatter.Format(_originalRootNode, _workspace).ToFullString()
+                    });
                     break;
                 }
             }
@@ -52,7 +66,7 @@ namespace MTOOS.Extension.Mutators
             File.WriteAllText(mutatedClassPath, finalMutantCodeRoot.ToFullString(), Encoding.Default);
         }
 
-        public Dictionary<string, string> GetMutatedClasses()
+        public List<MutationInformation> GetMutatedClasses()
         {
             return MutatedClassNames;
         }

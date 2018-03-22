@@ -28,10 +28,17 @@ namespace MTOOS.Extension
 
             Solution2 solution = (Solution2)dte.Solution;
             var mutationAnalyzer = new SourceCodeMutator(solution);
+
+            var mutantsFolderPath = Path.Combine(Path.GetDirectoryName(sourceCodeProject.FullName), "Mutants");
+            if (Directory.Exists(mutantsFolderPath))
+            {
+                Directory.Delete(mutantsFolderPath);
+            }
             sourceCodeProject.ProjectItems.AddFolder("Mutants");
             sourceCodeProject.Save();
-            
-            var mutatedClasses = mutationAnalyzer.PerformMutationAnalysisOnProject
+
+
+            List<MutationInformation> mutatedClasses = mutationAnalyzer.PerformMutationAnalysisOnProject
                 (sourceCodeProject, options);
             if (mutatedClasses.Count != 0)
             {
@@ -55,7 +62,7 @@ namespace MTOOS.Extension
 
                     dte.ExecuteCommand("CloseAll");
 
-                    liveMutants = RunTheMutatedUnitTestsUsingNUnitConsole(mutatedUnitTestProject, dte);
+                    liveMutants = RunTheMutatedUnitTestsUsingNUnitConsole(mutatedUnitTestProject, dte, mutatedClasses);
 
                     DeleteAllNonRelevantFiles(mutatedUnitTestProject, sourceCodeProject, 
                         solutionBuild2, liveMutants);
@@ -63,11 +70,11 @@ namespace MTOOS.Extension
                     dte.ExecuteCommand("TestExplorer.ShowTestExplorer");
                     dte.ExecuteCommand("TestExplorer.RunAllTests");
 
-                    MessageBox.Show("Mutation testing Done. Please check the mutants in the selected" +
-                        " project. Select the original file and the mutant in Solution Explorer, " +
-                        "right click and press 'Test by mutation...'. This way you will see the untested " +
-                        "areas in your code.",
-                        "Mutation Testing Done.", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                    //MessageBox.Show("Mutation testing Done. Please check the mutants in the selected" +
+                    //    " project. Select the original file and the mutant in Solution Explorer, " +
+                    //    "right click and press 'Test by mutation...'. This way you will see the untested " +
+                    //    "areas in your code.",
+                    //    "Mutation Testing Done.", MessageBoxButtons.OK, MessageBoxIcon.Information);
                 }
                 else
                 {
@@ -84,7 +91,7 @@ namespace MTOOS.Extension
         }
 
         private Project MutateUnitTestProject(Solution2 solution, SolutionBuild2 solutionBuild, 
-            Dictionary<string, string> mutatedClasses, Project unitTestProject)
+            List<MutationInformation> mutatedClasses, Project unitTestProject)
         {
             unitTestProject.ProjectItems.AddFolder("MutationCompiledUnits");
             unitTestProject.Save();
@@ -98,7 +105,8 @@ namespace MTOOS.Extension
             return unitTestProject;
         }
 
-        private List<Mutant> RunTheMutatedUnitTestsUsingNUnitConsole(Project unitTestProject, DTE2 dte)
+        private List<Mutant> RunTheMutatedUnitTestsUsingNUnitConsole(Project unitTestProject, DTE2 dte, 
+            List<MutationInformation> mutationAnalysis)
         {
             var unitTestAssemblyPath = GetAssemblyPath(unitTestProject);
             string solutionDir = Path.GetDirectoryName(dte.Solution.FullName);
@@ -134,13 +142,14 @@ namespace MTOOS.Extension
             List<Mutant> liveMutants = new List<Mutant>();
             if (File.Exists(NUnitResultXmlFilePath))
             {
-                liveMutants = AnalyzeNUnitTestResultFile(NUnitResultXmlFilePath);
+                liveMutants = AnalyzeNUnitTestResultFile(NUnitResultXmlFilePath, mutationAnalysis);
             }
-
+            
             return liveMutants;
         }
 
-        private List<Mutant> AnalyzeNUnitTestResultFile(string nUnitResultXmlFilePath)
+        private List<Mutant> AnalyzeNUnitTestResultFile(string nUnitResultXmlFilePath, 
+            List<MutationInformation> mutationInformation)
         {
             List<Mutant> mutationAnalysis = new List<Mutant>();
             XmlDocument xmlDocument = new XmlDocument();
@@ -158,12 +167,20 @@ namespace MTOOS.Extension
                     {
                         if (testFixtureNode.Attributes["result"].Value == "Passed")
                         {
-                            mutationAnalysis.Add(new Mutant()
+                            foreach (MutationInformation mi in mutationInformation)
                             {
-                                Id = Guid.NewGuid(),
-                                Name = testFixtureNode.Attributes["name"].Value,
-                                Status = testFixtureNode.Attributes["result"].Value
-                            });
+                                if (testFixtureNode.Attributes["name"].Value.Contains(mi.MutantName))
+                                {
+                                    mutationAnalysis.Add(new Mutant()
+                                    {
+                                        Id = Guid.NewGuid(),
+                                        Name = testFixtureNode.Attributes["name"].Value,
+                                        Status = testFixtureNode.Attributes["result"].Value,
+                                        MutatedCode = mi.MutatedCode,
+                                        OriginalProgramCode = mi.OriginalProgramCode
+                                    });
+                                }
+                            }
                         }
                     }
                 }

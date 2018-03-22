@@ -6,18 +6,11 @@ using System.Threading.Tasks;
 
 namespace MTOOS.Extension.Models
 {
-    public class Mutant
+    public class MutationInformation
     {
-        public Guid Id { get; set; }
-        public string Name { get; set; }
-        public string Status { get; set; }
-
+        public string ClassName { get; set; }
+        public string MutantName { get; set; }
         public string OriginalProgramCode { get; set; }
         public string MutatedCode { get; set; }
-
-        public override string ToString()
-        {
-            return Name + " - " + Status;
-        }
     }
 }

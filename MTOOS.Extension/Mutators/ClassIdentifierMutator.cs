@@ -23,8 +23,7 @@ namespace MTOOS.Extension.Mutators
             {
                 if (token.Value.ToString() == _className)
                 {
-                    return SyntaxFactory.Identifier(_mutatedClassName)
-                        .WithTrailingTrivia(SyntaxFactory.Space);
+                    return SyntaxFactory.Identifier(_mutatedClassName);
                 }
             }
 
