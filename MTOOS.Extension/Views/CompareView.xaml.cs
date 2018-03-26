@@ -3,6 +3,7 @@ using MTOOS.Extension.Models;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Runtime.InteropServices;
 using System.Text;
 using System.Threading.Tasks;
 using System.Windows;
@@ -26,6 +27,8 @@ namespace MTOOS.Extension.Views
         {
             this.InitializeComponent();
             liveMutants.ItemsSource = liveMutantsList;
+            originalProgram.Background = Brushes.LightGray;
+            liveMutant.Background = Brushes.LightGray;
         }
 
         private void LiveMutantslListView_Click(object sender, RoutedEventArgs e)
@@ -36,11 +39,44 @@ namespace MTOOS.Extension.Views
                 var selectedMutant = (Mutant)item;
 
                 //get the original program code
-                originalProgram.AppendText(selectedMutant.OriginalProgramCode);
+                var originalProgramLines = selectedMutant.OriginalProgramCode.Split('\n').ToList();
 
                 //get the live mutant code
-                liveMutant.AppendText(selectedMutant.MutatedCode);
+                var liveMutantLines = selectedMutant.MutatedCode.Split('\n').ToList();
+
+                //compare and highlight differences
+                for (int i = 0; i < originalProgramLines.Count; i++)
+                {
+                    if (originalProgramLines[i] != "\r" && liveMutantLines[i] != "\r")
+                    {
+                        var originalProgramParagraph = new Paragraph(new Run(originalProgramLines[i]));
+                        var liveMutantLineParagraph = new Paragraph(new Run(liveMutantLines[i]));
+                        
+                        if (originalProgramLines[i] != liveMutantLines[i])
+                        {
+                            originalProgramParagraph.Foreground = Brushes.Red;
+                            liveMutantLineParagraph.Foreground = Brushes.Red;
+                        }
+
+                        originalProgram.Document.Blocks.Add(originalProgramParagraph);
+                        liveMutant.Document.Blocks.Add(liveMutantLineParagraph);
+                    }
+                }
             }
-        } 
+        }
+
+        private void ClearButton_Click(object sender, RoutedEventArgs e)
+        {
+            liveMutant.Document.Blocks.Clear();
+            originalProgram.Document.Blocks.Clear();
+        }
+
+        private void RichTextBox_ScrollChanged(object sender, ScrollChangedEventArgs e)
+        {
+            var textToSync = (sender == originalProgram) ? liveMutant : originalProgram;
+
+            textToSync.ScrollToVerticalOffset(e.VerticalOffset);
+            textToSync.ScrollToHorizontalOffset(e.HorizontalOffset);
+        }
     }
 }
