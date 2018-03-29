@@ -11,9 +11,9 @@
              Name="MyToolWindow">
         <Grid>
             <DockPanel>
-            <Menu DockPanel.Dock="Top" Height="30" VerticalAlignment="Top" Width="225" HorizontalAlignment="Left">
-                <MenuItem Height="30" Header="Mutation Analysis" Width="140" Click="MutationAnalysisItem_Click"/>
-                <MenuItem Height="30" Header="Compare" Width="80" Click="CompareItem_Click"/>
+            <Menu DockPanel.Dock="Top" Height="30" VerticalAlignment="Top" Width="191" HorizontalAlignment="Left">
+                <MenuItem Height="30" Header="Mutation Analysis" Width="108" Click="MutationAnalysisItem_Click"/>
+                <MenuItem Height="30" Header="Compare" Width="83" Click="CompareItem_Click"/>
             </Menu>
         
             <ContentControl x:Name="content" Height="650" DockPanel.Dock="Bottom"/>
