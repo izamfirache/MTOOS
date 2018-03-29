@@ -14,61 +14,40 @@ namespace MTOOS.Extension.Mutators
 {
     public class MutantCreator
     {
-        private List<MutationInformation> MutatedClassNames;
-        private Solution2 _currentSolution;
         private string _className;
-        private EnvDTE.Project _project;
         private int _mutantVersion = 0;
         private SyntaxNode _originalRootNode;
-        private MSBuildWorkspace _workspace;
-        public MutantCreator(Solution2 currentSolution, string className, EnvDTE.Project project, SyntaxNode originalRootNode,
-            MSBuildWorkspace workspace)
+        private List<GeneratedMutant> GeneratedMutants;
+
+        public MutantCreator(string className, SyntaxNode originalRootNode)
         {
-            _currentSolution = currentSolution;
             _className = className;
-            _project = project;
-            MutatedClassNames = new List<MutationInformation>();
             _originalRootNode = originalRootNode;
-            _workspace = workspace;
+            GeneratedMutants = new List<GeneratedMutant>();
         }
 
         public void CreateNewMutant(SyntaxNode mutatedNamespaceRoot)
         {
-            string mutatedClassName = string.Format("{0}Mutant{1}", _className, _mutantVersion);
-            var classNameMutator = new ClassIdentifierMutator(_className,
-                string.Format("{0}Mutant{1}", _className, _mutantVersion));
-            _mutantVersion = _mutantVersion + 1;
+            var mutantName = string.Format("{0}Mutant{1}", _className, _mutantVersion++);
+            var classNameMutator = new ClassIdentifierMutator(_className, mutantName);
 
             var finalMutantCodeRoot = classNameMutator.Visit(mutatedNamespaceRoot);
 
-            string mutatedClassPath = string.Format(@"{0}\..\{1}\{2}\{3}.cs",
-                _currentSolution.FileName, _project.Name, "Mutants", mutatedClassName);
-
-            var classTemplatePath = _currentSolution.GetProjectItemTemplate("Class.zip", "csharp");
-
-            foreach (EnvDTE.ProjectItem projItem in _project.ProjectItems)
+            GeneratedMutants.Add(new GeneratedMutant()
             {
-                if (projItem.Name == "Mutants")
-                {
-                    projItem.ProjectItems.AddFromTemplate(classTemplatePath, string.Format("{0}.cs", 
-                        mutatedClassName));
-                    MutatedClassNames.Add(new MutationInformation()
-                    {
-                        ClassName = _className,
-                        MutantName = mutatedClassName,
-                        MutatedCode = Formatter.Format(finalMutantCodeRoot, _workspace).ToFullString(),
-                        OriginalProgramCode = Formatter.Format(_originalRootNode, _workspace).ToFullString()
-                    });
-                    break;
-                }
-            }
-
-            File.WriteAllText(mutatedClassPath, finalMutantCodeRoot.ToFullString(), Encoding.Default);
+                Id = Guid.NewGuid(),
+                MutantName = mutantName,
+                OriginalClassName = _className,
+                OriginalCodeRoot = _originalRootNode,
+                MutatedCodeRoot = finalMutantCodeRoot,
+                OriginalProgramCode = _originalRootNode.ToFullString(),
+                MutatedCode = finalMutantCodeRoot.ToFullString()
+            });
         }
 
-        public List<MutationInformation> GetMutatedClasses()
+        public List<GeneratedMutant> GetMutatedClasses()
         {
-            return MutatedClassNames;
+            return GeneratedMutants;
         }
     }
 }

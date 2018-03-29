@@ -43,7 +43,7 @@
             }
             else
             {
-                _compareView = new CompareView(new List<Mutant>());
+                _compareView = new CompareView(new List<GeneratedMutant>());
                 content.Content = _compareView;
             }
         }

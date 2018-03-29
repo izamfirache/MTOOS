@@ -23,7 +23,7 @@ namespace MTOOS.Extension.Views
     /// </summary>
     public partial class CompareView : UserControl
     {
-        public CompareView(List<Mutant> liveMutantsList)
+        public CompareView(List<GeneratedMutant> liveMutantsList)
         {
             this.InitializeComponent();
             liveMutants.ItemsSource = liveMutantsList;
@@ -36,7 +36,7 @@ namespace MTOOS.Extension.Views
             var item = (sender as ListView).SelectedItem;
             if (item != null)
             {
-                var selectedMutant = (Mutant)item;
+                var selectedMutant = (GeneratedMutant)item;
 
                 //get the original program code
                 var originalProgramLines = selectedMutant.OriginalProgramCode.Split('\n').ToList();

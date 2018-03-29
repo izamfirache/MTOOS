@@ -16,7 +16,7 @@ namespace MTOOS.Extension.Views
     public partial class MutationAnalysisView : UserControl
     {
         public List<string> CheckedOptions;
-        public List<Mutant> GeneratedMutantList = new List<Mutant>();
+        public List<GeneratedMutant> GeneratedMutantList = new List<GeneratedMutant>();
 
         /// <summary>
         /// Initializes a new instance of the <see cref="MutantKillerWindowControl"/> class.
