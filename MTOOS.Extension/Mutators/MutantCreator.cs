@@ -16,31 +16,31 @@ namespace MTOOS.Extension.Mutators
     {
         private string _className;
         private int _mutantVersion = 0;
-        private SyntaxNode _originalRootNode;
+        private SyntaxNode _originalClassRootNode;
         private List<GeneratedMutant> GeneratedMutants;
 
-        public MutantCreator(string className, SyntaxNode originalRootNode)
+        public MutantCreator(string className, SyntaxNode originalClassRootNode)
         {
             _className = className;
-            _originalRootNode = originalRootNode;
+            _originalClassRootNode = originalClassRootNode;
             GeneratedMutants = new List<GeneratedMutant>();
         }
 
-        public void CreateNewMutant(SyntaxNode mutatedNamespaceRoot)
+        public void CreateNewMutant(SyntaxNode classSyntaxNode)
         {
             var mutantName = string.Format("{0}Mutant{1}", _className, _mutantVersion++);
             var classNameMutator = new ClassIdentifierMutator(_className, mutantName);
 
-            var finalMutantCodeRoot = classNameMutator.Visit(mutatedNamespaceRoot);
+            var finalMutantCodeRoot = classNameMutator.Visit(classSyntaxNode);
 
             GeneratedMutants.Add(new GeneratedMutant()
             {
                 Id = Guid.NewGuid(),
                 MutantName = mutantName,
                 OriginalClassName = _className,
-                OriginalCodeRoot = _originalRootNode,
+                OriginalCodeRoot = _originalClassRootNode,
                 MutatedCodeRoot = finalMutantCodeRoot,
-                OriginalProgramCode = _originalRootNode.ToFullString(),
+                OriginalProgramCode = _originalClassRootNode.ToFullString(),
                 MutatedCode = finalMutantCodeRoot.ToFullString()
             });
         }

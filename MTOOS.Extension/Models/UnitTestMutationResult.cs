@@ -9,7 +9,8 @@ namespace MTOOS.Extension.Models
 {
     public class UnitTestMutationResult
     {
-        public Project MutatedUnitTestProject { get; set; }
+        public Compilation MutatedUnitTestProjectCompilation { get; set; }
         public List<GeneratedMutant> GeneratedUnitTestMutants { get; set; }
+        public string OutputPath { get; set; }
     }
 }

@@ -27,37 +27,39 @@ namespace MTOOS.Extension
             Solution2 solution = (Solution2)dte.Solution;
             var mutationAnalyzer = new SourceCodeMutator(solution);
 
-            sourceCodeProject.ProjectItems.AddFolder("Mutants");
-            sourceCodeProject.Save();
-
              var sourceprojectMutationResult = 
                 mutationAnalyzer.PerformMutationAnalysisOnSourceCodeProject(sourceCodeProject, options);
 
             var liveMutants = new List<GeneratedMutant>();
-            if (sourceprojectMutationResult.GeneratedMutants.Count != 0)
-            {
-                var unitTestProjectMutation = 
-                    MutateUnitTestProject(solution, sourceprojectMutationResult, unitTestProject);
-                
-                liveMutants = RunTheMutatedUnitTestSuiteUsingNUnitConsole
-                    (unitTestProjectMutation, dte, sourceprojectMutationResult.GeneratedMutants);
+            //if (sourceprojectMutationResult.GeneratedMutants.Count != 0)
+            //{
+            //    var unitTestProjectMutation =
+            //        MutateUnitTestProject(solution, sourceprojectMutationResult, unitTestProject, sourceCodeProject);
 
-                MessageBox.Show("Mutation Testing done!");
-            }
-            else
-            {
-                MessageBox.Show("Error at source code project mutation");
-            }
+            //    foreach(var syntaxTree in unitTestProjectMutation.MutatedUnitTestProjectCompilation.SyntaxTrees)
+            //    {
+            //        MessageBox.Show(syntaxTree.GetRoot().ToFullString());
+            //    }
+
+            //    liveMutants = RunTheMutatedUnitTestSuiteUsingNUnitConsole
+            //        (unitTestProjectMutation, dte, sourceprojectMutationResult.GeneratedMutants);
+
+            //    MessageBox.Show("Mutation Testing done!");
+            //}
+            //else
+            //{
+            //    MessageBox.Show("Error at source code project mutation");
+            //}
 
             return liveMutants;
         }
 
         private UnitTestMutationResult MutateUnitTestProject(Solution2 solution, 
-            SourceCodeMutationResult sourceCodeMutationResult, Project unitTestProject)
+            SourceCodeMutationResult sourceCodeMutationResult, Project unitTestProject, Project sourceCodeProject)
         {
             var unitTestsMutator = new UnitTestSuiteMutator(solution);
             var unitTestMutationResult = 
-                unitTestsMutator.PerformMutationForUnitTestProject(unitTestProject, sourceCodeMutationResult);
+                unitTestsMutator.PerformMutationForUnitTestProject(unitTestProject, sourceCodeMutationResult, sourceCodeProject);
 
             return unitTestMutationResult;
         }
@@ -72,14 +74,13 @@ namespace MTOOS.Extension
             var NUnitConsolePath = Path.Combine(packagesFolder,
                 "NUnit.ConsoleRunner.3.8.0\\tools\\nunit3-console.exe"); // TODO: avoid the version dependency!!
 
-            var nunitOutputFilePath = 
-                Path.GetDirectoryName(unitTestProjectMutationResult.MutatedUnitTestProject.OutputFilePath);
+            var nunitOutputFilePath = Path.GetDirectoryName(unitTestProjectMutationResult.OutputPath);
             
             var processStartInfo = new ProcessStartInfo
             {
                 FileName = string.Format(@"""{0}""", NUnitConsolePath),
                 Arguments = string.Format(@"--work=""{0}"" ""{1}""", nunitOutputFilePath,
-                unitTestProjectMutationResult.MutatedUnitTestProject.OutputFilePath),
+                    unitTestProjectMutationResult.OutputPath),
                 UseShellExecute = false,
                 CreateNoWindow = true
             };
@@ -98,7 +99,7 @@ namespace MTOOS.Extension
             }
 
             var NUnitResultXmlFilePath = Path.Combine(Path.GetDirectoryName(
-                        Path.GetDirectoryName(unitTestProjectMutationResult.MutatedUnitTestProject.OutputFilePath)),
+                        Path.GetDirectoryName(unitTestProjectMutationResult.OutputPath)),
                         @"Debug\\TestResult.xml");
 
             List<GeneratedMutant> liveMutants = new List<GeneratedMutant>();

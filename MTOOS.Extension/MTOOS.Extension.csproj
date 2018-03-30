@@ -57,6 +57,7 @@
     <Compile Include="Helpers\EnvDteHelper.cs" />
     <Compile Include="Helpers\RoslynSetupHelper.cs" />
     <Compile Include="Models\GeneratedMutant.cs" />
+    <Compile Include="Models\GenerateMutantsForProjectResult.cs" />
     <Compile Include="Models\ProjectPresentation.cs" />
     <Compile Include="Models\SourceCodeMutationResult.cs" />
     <Compile Include="Models\UnitTestMutationResult.cs" />

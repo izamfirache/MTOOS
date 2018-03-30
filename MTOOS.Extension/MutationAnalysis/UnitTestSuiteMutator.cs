@@ -33,7 +33,8 @@ namespace MTOOS.Extension.MutationAnalysis
 
         public UnitTestMutationResult PerformMutationForUnitTestProject(
             EnvDTE.Project unitTestProject, 
-            SourceCodeMutationResult sourceCodeMutationResult)
+            SourceCodeMutationResult sourceCodeMutationResult,
+            EnvDTE.Project sourceCodeProject)
         {
             //setup workspace, solution, project
             var solution = _roslynSetupHelper.GetSolutionToAnalyze(
@@ -45,20 +46,33 @@ namespace MTOOS.Extension.MutationAnalysis
             List<GeneratedMutant> generatedUnitTestMutants = 
                 GenerateMutantsForUnitTestProject(projectAssembly, sourceCodeMutationResult.GeneratedMutants);
 
-            //compile the generated unit test mutants
-            List<MetadataReference> metadataReferences = 
-                CompileUnitTestMutants(generatedUnitTestMutants, projectAssembly, 
-                sourceCodeMutationResult, unitTestProject);
-
             //compile the unit test suite code with the unit test mutants
             //in order to run them over the mutants
-            var mutatedUnitTestProject = projectToAnalyze.AddMetadataReferences(metadataReferences);
-            Compilation mutatedSourceCodeProjectCompilation = mutatedUnitTestProject.GetCompilationAsync().Result;
+            var projectToAnalyzeCompilation = projectToAnalyze.GetCompilationAsync().Result;
+            Compilation mutatedSourceCodeProjectCompilation =
+                projectToAnalyzeCompilation.AddReferences
+                (MetadataReference.CreateFromFile(sourceCodeMutationResult.OutputPath));
+            
+            List<MetadataReference> metadataReferences =
+                CompileUnitTestMutants(generatedUnitTestMutants, projectAssembly,
+                sourceCodeMutationResult, unitTestProject, sourceCodeProject);
+            Compilation preCompilation =
+                mutatedSourceCodeProjectCompilation.AddReferences(metadataReferences);
+
+            var finalCompilation = preCompilation
+                .AddSyntaxTrees(generatedUnitTestMutants.Select(gm => gm.MutatedCodeRoot.SyntaxTree).ToList());
+
+            var mutatedUnitTestProjectDllPath = Path.Combine(
+                Path.GetDirectoryName(projectToAnalyze.OutputFilePath), "MutatedUnitTestProject.dll");
+            var mutatedUnitTestProjectPdbPath = Path.Combine(
+                Path.GetDirectoryName(projectToAnalyze.OutputFilePath), "MutatedUnitTestProject.pdb");
+            var emitResult = finalCompilation.Emit(mutatedUnitTestProjectDllPath, mutatedUnitTestProjectPdbPath);
 
             return new UnitTestMutationResult()
             {
-                MutatedUnitTestProject = mutatedUnitTestProject,
-                GeneratedUnitTestMutants = generatedUnitTestMutants
+                MutatedUnitTestProjectCompilation = finalCompilation,
+                GeneratedUnitTestMutants = generatedUnitTestMutants,
+                OutputPath = mutatedUnitTestProjectDllPath
             };
         }
 
@@ -66,7 +80,8 @@ namespace MTOOS.Extension.MutationAnalysis
             List<GeneratedMutant> generatedMutants, 
             Compilation projectAssembly,
             SourceCodeMutationResult sourceCodeMutationResult,
-            EnvDTE.Project unitTestProject)
+            EnvDTE.Project unitTestProject,
+            EnvDTE.Project sourceCodeProject)
         {
             var compiledMutants = new List<MetadataReference>();
             var options = new CSharpCompilationOptions(
@@ -78,11 +93,14 @@ namespace MTOOS.Extension.MutationAnalysis
             var _references = new List<MetadataReference>
             {
                 MetadataReference.CreateFromFile(typeof(System.Reflection.Binder).GetTypeInfo().Assembly.Location),
-                MetadataReference.CreateFromFile(sourceCodeMutationResult.MutatedSourceCodeProject.OutputFilePath)
+                MetadataReference.CreateFromFile(sourceCodeMutationResult.OutputPath)
             };
             foreach (string referencePath in unitTestProjectRefereces)
             {
-                _references.Add(MetadataReference.CreateFromFile(referencePath));
+                if (!Path.GetFileNameWithoutExtension(referencePath).Contains(sourceCodeProject.Name))
+                {
+                    _references.Add(MetadataReference.CreateFromFile(referencePath));
+                }
             }
 
             foreach (GeneratedMutant genMutant in generatedMutants)
@@ -99,8 +117,7 @@ namespace MTOOS.Extension.MutationAnalysis
                 if (emitResult.Success)
                 {
                     stream.Seek(0, SeekOrigin.Begin);
-                    AssemblyDefinition assembly = AssemblyDefinition.ReadAssembly(stream);
-                    compiledMutants.Add(MetadataReference.CreateFromStream(stream));
+                    compiledMutants.Add(compilation.ToMetadataReference());
                 }
             }
 
@@ -135,7 +152,7 @@ namespace MTOOS.Extension.MutationAnalysis
                                 var unitTestClassMutator = new UnitTestClassMutator(mi.OriginalClassName, mi.MutantName,
                                     unitTestClassName, mutatedUnitTestClassName);
                                 var mutatedUnitTestClassNsRoot = unitTestClassMutator.Visit(namespaceTreeRoot);
-
+                                
                                 generatedMutants.Add(new GeneratedMutant()
                                 {
                                     Id = Guid.NewGuid(),
