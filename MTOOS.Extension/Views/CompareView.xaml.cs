@@ -39,28 +39,51 @@ namespace MTOOS.Extension.Views
                 var selectedMutant = (GeneratedMutant)item;
 
                 //get the original program code
-                var originalProgramLines = selectedMutant.OriginalProgramCode.Split('\n').ToList();
-
+                var originalProgramLines = selectedMutant.OriginalProgramCode
+                    .Split('\n').Where(line => line != "\r").ToArray();
+                
                 //get the live mutant code
-                var liveMutantLines = selectedMutant.MutatedCode.Split('\n').ToList();
+                var liveMutantLines = selectedMutant.MutatedCode
+                    .Split('\n').Where(line => line != "\r").ToArray();
+
+                if (selectedMutant.HaveDeletedStatement)
+                {
+                    var formatedMutant = new string[liveMutantLines.Count() + 1];
+
+                    //manually indent the code
+                    char lastCh = liveMutantLines[0][liveMutantLines[0].Length - 2];
+                    if(lastCh == '{')
+                    {
+                        //shift the lines with one position
+                        for(int j = 1; j < liveMutantLines.Count(); j++)
+                        {
+                            formatedMutant[j + 1] = liveMutantLines[j];
+                        }
+                        formatedMutant[0] = liveMutantLines[0].Replace('{', ' ');
+                        formatedMutant[1] = "   {";
+                    }
+
+                    liveMutantLines = formatedMutant;
+                    originalProgramLines[1].Replace('\r', ' ');
+                }
 
                 //compare and highlight differences
-                for (int i = 0; i < originalProgramLines.Count; i++)
+                for (int i = 0; i < originalProgramLines.Count(); i++)
                 {
-                    if (originalProgramLines[i] != "\r" && liveMutantLines[i] != "\r")
-                    {
-                        var originalProgramParagraph = new Paragraph(new Run(originalProgramLines[i]));
-                        var liveMutantLineParagraph = new Paragraph(new Run(liveMutantLines[i]));
+                    var originalProgramParagraph = 
+                        new Paragraph(new Run(originalProgramLines[i].TrimStart()));
+                    var liveMutantLineParagraph = 
+                        new Paragraph(new Run(liveMutantLines[i].TrimStart()));
                         
-                        if (originalProgramLines[i] != liveMutantLines[i])
-                        {
-                            originalProgramParagraph.Foreground = Brushes.Red;
-                            liveMutantLineParagraph.Foreground = Brushes.Red;
-                        }
-
-                        originalProgram.Document.Blocks.Add(originalProgramParagraph);
-                        liveMutant.Document.Blocks.Add(liveMutantLineParagraph);
+                    if (originalProgramLines[i].TrimStart() != liveMutantLines[i].TrimStart())
+                    {
+                        originalProgramParagraph.Foreground = Brushes.Red;
+                        liveMutantLineParagraph.Foreground = Brushes.Red;
                     }
+
+                    originalProgram.Document.Blocks.Add(originalProgramParagraph);
+                    liveMutant.Document.Blocks.Add(liveMutantLineParagraph);
+                   
                 }
             }
         }

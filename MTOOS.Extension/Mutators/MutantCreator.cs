@@ -1,5 +1,6 @@
 ﻿using EnvDTE80;
 using Microsoft.CodeAnalysis;
+using Microsoft.CodeAnalysis.CSharp.Syntax;
 using Microsoft.CodeAnalysis.Formatting;
 using Microsoft.CodeAnalysis.MSBuild;
 using MTOOS.Extension.Models;
@@ -16,22 +17,31 @@ namespace MTOOS.Extension.Mutators
     {
         private string _className;
         private int _mutantVersion = 0;
-        private SyntaxNode _originalClassRootNode;
+        private ClassDeclarationSyntax _originalClassRootNode;
         private List<GeneratedMutant> GeneratedMutants;
+        private Workspace _workspace;
 
-        public MutantCreator(string className, SyntaxNode originalClassRootNode)
+        public MutantCreator(string className, ClassDeclarationSyntax originalClassRootNode,
+            Workspace workspace)
         {
             _className = className;
             _originalClassRootNode = originalClassRootNode;
             GeneratedMutants = new List<GeneratedMutant>();
+            _workspace = workspace;
         }
 
-        public void CreateNewMutant(SyntaxNode classSyntaxNode)
+        public void CreateNewMutant(SyntaxNode classSyntaxNode, bool isDeletionOperator)
         {
             var mutantName = string.Format("{0}Mutant{1}", _className, _mutantVersion++);
             var classNameMutator = new ClassIdentifierMutator(_className, mutantName);
 
-            var finalMutantCodeRoot = classNameMutator.Visit(classSyntaxNode);
+            var finalMutantCodeRoot = (ClassDeclarationSyntax)classNameMutator.Visit(classSyntaxNode);
+
+            if (!isDeletionOperator)
+            {
+                finalMutantCodeRoot = finalMutantCodeRoot.NormalizeWhitespace();
+                _originalClassRootNode = _originalClassRootNode.NormalizeWhitespace();
+            }
 
             GeneratedMutants.Add(new GeneratedMutant()
             {
@@ -41,7 +51,8 @@ namespace MTOOS.Extension.Mutators
                 OriginalCodeRoot = _originalClassRootNode,
                 MutatedCodeRoot = finalMutantCodeRoot,
                 OriginalProgramCode = _originalClassRootNode.ToFullString(),
-                MutatedCode = finalMutantCodeRoot.ToFullString()
+                MutatedCode = finalMutantCodeRoot.ToFullString(),
+                HaveDeletedStatement = isDeletionOperator
             });
         }
 

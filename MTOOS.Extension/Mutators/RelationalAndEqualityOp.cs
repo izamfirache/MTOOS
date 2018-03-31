@@ -82,7 +82,7 @@ namespace MTOOS.Extension.Mutators
             if (!newToken.IsKind(SyntaxKind.None))
             {
                 var mutatedNamespaceRoot = _namespaceRootNode.ReplaceToken(token, newToken);
-                _mutantCreator.CreateNewMutant(mutatedNamespaceRoot);
+                _mutantCreator.CreateNewMutant(mutatedNamespaceRoot, false);
             }
 
             return token;

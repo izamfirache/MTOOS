@@ -38,8 +38,6 @@ namespace MTOOS.Extension.MutationAnalysis
             EnvDTE.Project sourceCodeProject, 
             List<string> options)
         {
-            //setup, create workspace, find solution, 
-            //get the compilation unit and the semantic model for the source code project
             var workspace = _roslynSetupHelper.CreateWorkspace();
             var solution = _roslynSetupHelper.GetSolutionToAnalyze(
                 workspace, _currentSolution.FileName);
@@ -48,24 +46,25 @@ namespace MTOOS.Extension.MutationAnalysis
             var projectSemanticModel = _roslynSetupHelper.GetProjectSemanticModel(
                 _roslynSetupHelper.GetProjectToAnalyze(solution, sourceCodeProject.Name));
             
-            var mutantsGenerationResult = 
-                GenerateMutantsForProject(projectAssembly, projectSemanticModel, options);
-            var mutatedSourceCodeProjectDllPath = Path.Combine(
-                Path.GetDirectoryName(sourceCodeProject.FullName), "MutatedSourceCodeProject.dll");
+            var generatedMutants = 
+                GenerateMutantsForProject(projectAssembly, projectSemanticModel, options, workspace);
 
-            Compilation finalCompilation = GetMutatedCompilation(mutantsGenerationResult, sourceCodeProject,
-                mutatedSourceCodeProjectDllPath);
+            Compilation finalCompilation = GetMutatedCompilation(generatedMutants, sourceCodeProject);
 
-            return new SourceCodeMutationResult()
+            if (finalCompilation != null)
             {
-                MutatedSourceCodeProjectCompilation = finalCompilation,
-                GeneratedMutants = mutantsGenerationResult.GeneratedMutants,
-                OutputPath = mutatedSourceCodeProjectDllPath
-            };
+                return new SourceCodeMutationResult()
+                {
+                    GeneratedMutants = generatedMutants,
+                    OutputPath = projectToAnalyze.OutputFilePath
+                };
+            }
+
+            return null;
         }
 
-        private Compilation GetMutatedCompilation(GenerateMutantsForProjectResult mutantsGenerationResult,
-            EnvDTE.Project sourceCodeProject, string outputPath)
+        private Compilation GetMutatedCompilation(List<GeneratedMutant> generatedMutants,
+            EnvDTE.Project sourceCodeProject)
         {
             List<MetadataReference> metadataReferences = new List<MetadataReference>();
             var options = new CSharpCompilationOptions(
@@ -86,20 +85,31 @@ namespace MTOOS.Extension.MutationAnalysis
             var compilationUnit = SyntaxFactory.CompilationUnit().WithMembers(
                 SyntaxFactory.SingletonList<MemberDeclarationSyntax>(
                     SyntaxFactory.NamespaceDeclaration(
-                        SyntaxFactory.IdentifierName("Default"))));
+                        SyntaxFactory.IdentifierName("MutatedClasses"))
+                        .WithMembers(
+            SyntaxFactory.SingletonList<MemberDeclarationSyntax>(
+                SyntaxFactory.ClassDeclaration("FirstTestMutant")
+                .WithModifiers(
+                    SyntaxFactory.TokenList(
+                        SyntaxFactory.Token(SyntaxKind.PublicKeyword)))))))
+                            .NormalizeWhitespace();
 
             var compilationUnitRoot = compilationUnit.SyntaxTree.GetRoot() as CompilationUnitSyntax;
-            var defaultAddedNameSpace = compilationUnitRoot.DescendantNodes().OfType<NamespaceDeclarationSyntax>().First();
+            var mutatedClassesNameSpace = 
+                compilationUnitRoot.DescendantNodes().OfType<NamespaceDeclarationSyntax>().First();
+            var firstTestMutant = 
+                mutatedClassesNameSpace.DescendantNodes().OfType<ClassDeclarationSyntax>().First();
             var compilationUnitSyntaxTree = compilationUnitRoot
-                .InsertNodesAfter(defaultAddedNameSpace, mutantsGenerationResult.MutatedSyntaxTrees);
+                .InsertNodesAfter(firstTestMutant, generatedMutants.Select(p=>p.MutatedCodeRoot));
 
             var compilation = CSharpCompilation.Create(
-                "MutatedSourceCodeProjectCompilation",
+                "MutatedSourceCodeProject",
                 options: options,
                 references: _references)
                 .AddSyntaxTrees(compilationUnitSyntaxTree.SyntaxTree);
-            
-            var emitResult = compilation.Emit(outputPath);
+
+            var stream = new MemoryStream();
+            var emitResult = compilation.Emit(stream);
 
             if (emitResult.Success)
             {
@@ -109,13 +119,13 @@ namespace MTOOS.Extension.MutationAnalysis
             return null;
         }
 
-        private GenerateMutantsForProjectResult GenerateMutantsForProject(
+        private List<GeneratedMutant> GenerateMutantsForProject(
             Compilation projectAssembly,
             SemanticModel projectSemanticModel,
-            List<string> options)
+            List<string> options,
+            Workspace workspace)
         {
             var generatedMutants = new List<GeneratedMutant>();
-            var mutatedNamespaces = new List<NamespaceDeclarationSyntax>();
 
             foreach (var syntaxTree in projectAssembly.SyntaxTrees)
             {
@@ -128,37 +138,36 @@ namespace MTOOS.Extension.MutationAnalysis
                     var namespaceTreeRoot = ns.SyntaxTree.GetRoot();
 
                     var name = ns.Name.ToFullString();
-                    if (namespaceClasses.Count != 0 && !mutatedNamespaces.Any(p => p.Name.ToFullString() == name))
+                    if (namespaceClasses.Count != 0)
                     {
                         //TODO: do this for all classes from that namespace !
                         ClassDeclarationSyntax classSyntaxNode = namespaceClasses.ElementAt(0);
-                        SyntaxNode classSyntaxRootNode = classSyntaxNode.SyntaxTree.GetRoot();
                         var className = classSyntaxNode.Identifier.Value.ToString();
 
-                        var mutantCreator = new MutantCreator(className, classSyntaxRootNode);
+                        var mutantCreator = new MutantCreator(className, classSyntaxNode, workspace);
 
                         if (options.Contains("1"))
                         {
                             //apply additive and multiplicative mutations
                             var mathOperatorMutator = new AdditiveAndMultiplicativeOp
-                                (classSyntaxRootNode, mutantCreator);
-                            mathOperatorMutator.Visit(classSyntaxRootNode);
+                                (classSyntaxNode, mutantCreator);
+                            mathOperatorMutator.Visit(classSyntaxNode);
                         }
 
                         if (options.Contains("2"))
                         {
                             //apply assignment expression mutation
                             var assignmentExprMutator = new AssignmentExprMutator
-                            (classSyntaxRootNode, mutantCreator, projectSemanticModel);
-                            assignmentExprMutator.Visit(classSyntaxRootNode);
+                            (classSyntaxNode, mutantCreator, projectSemanticModel);
+                            assignmentExprMutator.Visit(classSyntaxNode);
                         }
 
                         if (options.Contains("3"))
                         {
                             //apply realtional and equity mutations
                             var relationalAndEquityOp = new RelationalAndEqualityOp
-                            (classSyntaxRootNode, mutantCreator);
-                            relationalAndEquityOp.Visit(classSyntaxRootNode);
+                            (classSyntaxNode, mutantCreator);
+                            relationalAndEquityOp.Visit(classSyntaxNode);
                         }
 
                         if (options.Contains("4"))
@@ -175,33 +184,16 @@ namespace MTOOS.Extension.MutationAnalysis
                             }
 
                             var thisKeywordStatementDeletion = new ThisStatementDeletion
-                                (classSyntaxRootNode, mutantCreator, classFieldsIdentifiers);
-                            thisKeywordStatementDeletion.Visit(classSyntaxRootNode);
+                                (classSyntaxNode, mutantCreator, classFieldsIdentifiers);
+                            thisKeywordStatementDeletion.Visit(classSyntaxNode);
                         }
 
                         generatedMutants.AddRange(mutantCreator.GetMutatedClasses());
-
-                        //add the mutants classes under the same namespace root node
-                        var toBeAddedClasses = new List<ClassDeclarationSyntax>();
-                        foreach(SyntaxNode syntaxNode in generatedMutants.Select(gm => gm.MutatedCodeRoot).ToList())
-                        {
-                            var classes = syntaxNode.DescendantNodes().OfType<ClassDeclarationSyntax>().ToList();
-                            var firstClass = classes.ElementAt(0);
-                            toBeAddedClasses.Add(firstClass);
-                        }
-                        
-                        NamespaceDeclarationSyntax mutatedNamespace = 
-                            ns.InsertNodesAfter(classSyntaxNode, toBeAddedClasses);
-                        mutatedNamespaces.Add(mutatedNamespace);
                     }
                 }
             }
 
-            return new GenerateMutantsForProjectResult()
-            {
-                GeneratedMutants = generatedMutants,
-                MutatedSyntaxTrees = mutatedNamespaces
-            };
+            return generatedMutants;
         }
     }
 }

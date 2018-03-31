@@ -9,7 +9,6 @@ namespace MTOOS.Extension.Models
 {
     public class SourceCodeMutationResult
     {
-        public Compilation MutatedSourceCodeProjectCompilation { get; set; }
         public List<GeneratedMutant> GeneratedMutants { get; set; }
         public string OutputPath { get; set; }
     }

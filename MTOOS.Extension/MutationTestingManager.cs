@@ -31,35 +31,38 @@ namespace MTOOS.Extension
                 mutationAnalyzer.PerformMutationAnalysisOnSourceCodeProject(sourceCodeProject, options);
 
             var liveMutants = new List<GeneratedMutant>();
-            //if (sourceprojectMutationResult.GeneratedMutants.Count != 0)
-            //{
-            //    var unitTestProjectMutation =
-            //        MutateUnitTestProject(solution, sourceprojectMutationResult, unitTestProject, sourceCodeProject);
-
-            //    foreach(var syntaxTree in unitTestProjectMutation.MutatedUnitTestProjectCompilation.SyntaxTrees)
-            //    {
-            //        MessageBox.Show(syntaxTree.GetRoot().ToFullString());
-            //    }
-
-            //    liveMutants = RunTheMutatedUnitTestSuiteUsingNUnitConsole
-            //        (unitTestProjectMutation, dte, sourceprojectMutationResult.GeneratedMutants);
-
-            //    MessageBox.Show("Mutation Testing done!");
-            //}
-            //else
-            //{
-            //    MessageBox.Show("Error at source code project mutation");
-            //}
+            if (sourceprojectMutationResult.GeneratedMutants.Count != 0)
+            {
+                var unitTestProjectMutation =
+                    MutateUnitTestProject(solution, sourceprojectMutationResult, 
+                    unitTestProject, sourceCodeProject);
+                
+                liveMutants = RunTheMutatedUnitTestSuiteUsingNUnitConsole
+                    (unitTestProjectMutation, dte, sourceprojectMutationResult.GeneratedMutants);
+            }
+            else
+            {
+                MessageBox.Show("Error at source code project mutation");
+            }
 
             return liveMutants;
         }
 
         private UnitTestMutationResult MutateUnitTestProject(Solution2 solution, 
-            SourceCodeMutationResult sourceCodeMutationResult, Project unitTestProject, Project sourceCodeProject)
+            SourceCodeMutationResult sourceCodeMutationResult, Project unitTestProject, 
+            Project sourceCodeProject)
         {
             var unitTestsMutator = new UnitTestSuiteMutator(solution);
             var unitTestMutationResult = 
-                unitTestsMutator.PerformMutationForUnitTestProject(unitTestProject, sourceCodeMutationResult, sourceCodeProject);
+                unitTestsMutator.PerformMutationForUnitTestProject(unitTestProject, sourceCodeMutationResult, 
+                sourceCodeProject);
+
+            unitTestProject.ProjectItems.AddFromFile(unitTestsMutator.MutatedUnitTestCodePath);
+            unitTestProject.Save();
+
+            SolutionBuild2 solutionBuild2 = (SolutionBuild2)unitTestProject.DTE.Solution.SolutionBuild;
+            solutionBuild2.BuildProject(solutionBuild2.ActiveConfiguration.Name,
+                unitTestProject.UniqueName, true);
 
             return unitTestMutationResult;
         }
@@ -75,7 +78,7 @@ namespace MTOOS.Extension
                 "NUnit.ConsoleRunner.3.8.0\\tools\\nunit3-console.exe"); // TODO: avoid the version dependency!!
 
             var nunitOutputFilePath = Path.GetDirectoryName(unitTestProjectMutationResult.OutputPath);
-            
+
             var processStartInfo = new ProcessStartInfo
             {
                 FileName = string.Format(@"""{0}""", NUnitConsolePath),
@@ -112,37 +115,43 @@ namespace MTOOS.Extension
         }
 
         private List<GeneratedMutant> AnalyzeNUnitTestResultFile(string nUnitResultXmlFilePath, 
-            List<GeneratedMutant> mutationInformation)
+            List<GeneratedMutant> generatedMutants)
         {
-            List<GeneratedMutant> mutationAnalysis = new List<GeneratedMutant>();
+            List<GeneratedMutant> liveMutants = new List<GeneratedMutant>();
             XmlDocument xmlDocument = new XmlDocument();
             xmlDocument.Load(nUnitResultXmlFilePath);
 
             XmlNode testRunNode = xmlDocument.SelectSingleNode("test-run");
             XmlNode assemblyTestSuiteNode = testRunNode.SelectSingleNode("test-suite");
-            XmlNode testSuiteNode = assemblyTestSuiteNode.SelectSingleNode("test-suite");
 
-            if (testSuiteNode.Attributes["type"].Value == "TestSuite")
+            foreach (XmlNode testSuiteNode in assemblyTestSuiteNode.SelectNodes("test-suite"))
             {
-                foreach (XmlNode testFixtureNode in testSuiteNode.SelectNodes("test-suite"))
+                if (testSuiteNode.Attributes["type"].Value == "TestSuite")
                 {
-                    if (testFixtureNode.Attributes["name"].Value.Contains("Mutant"))
+                    foreach (XmlNode testFixtureNode in testSuiteNode.SelectNodes("test-suite"))
                     {
-                        if (testFixtureNode.Attributes["result"].Value == "Passed")
+                        if (testFixtureNode.Attributes["type"].Value == "TestFixture")
                         {
-                            foreach (GeneratedMutant mi in mutationInformation)
+                            if (testFixtureNode.Attributes["name"].Value.Contains("Mutant"))
                             {
-                                if (testFixtureNode.Attributes["name"].Value.Contains(mi.MutantName))
+                                if (testFixtureNode.Attributes["result"].Value == "Passed")
                                 {
-                                    mutationAnalysis.Add(new GeneratedMutant()
+                                    foreach (GeneratedMutant mi in generatedMutants)
                                     {
-                                        Id = mi.Id,
-                                        MutantName = mi.MutantName,
-                                        Status = testFixtureNode.Attributes["result"].Value,
-                                        MutatedCode = mi.MutatedCode,
-                                        OriginalProgramCode = mi.OriginalProgramCode,
-                                        OriginalClassName = mi.OriginalClassName
-                                    });
+                                        if (testFixtureNode.Attributes["name"].Value.Contains(mi.MutantName))
+                                        {
+                                            liveMutants.Add(new GeneratedMutant()
+                                            {
+                                                Id = mi.Id,
+                                                MutantName = mi.MutantName,
+                                                Status = testFixtureNode.Attributes["result"].Value,
+                                                MutatedCode = mi.MutatedCode,
+                                                OriginalProgramCode = mi.OriginalProgramCode,
+                                                OriginalClassName = mi.OriginalClassName,
+                                                HaveDeletedStatement = mi.HaveDeletedStatement
+                                            });
+                                        }
+                                    }
                                 }
                             }
                         }
@@ -150,7 +159,7 @@ namespace MTOOS.Extension
                 }
             }
 
-            return mutationAnalysis;
+            return liveMutants;
         }
         private Project GetUnitTestProject(Solution2 solution)
         {
