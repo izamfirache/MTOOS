@@ -24,11 +24,12 @@ namespace MTOOS.Extension
         public List<GeneratedMutant> PerformMutationTestingOnProject(DTE2 dte, Project sourceCodeProject, 
             Project unitTestProject, List<string> options)
         {
+            Stopwatch stopwatch = Stopwatch.StartNew();
             Solution2 solution = (Solution2)dte.Solution;
-            var mutationAnalyzer = new SourceCodeMutator(solution);
+            var sourceCodeMutator = new SourceCodeMutator(solution);
 
              var sourceprojectMutationResult = 
-                mutationAnalyzer.PerformMutationAnalysisOnSourceCodeProject(sourceCodeProject, options);
+                sourceCodeMutator.PerformMutationAnalysisOnSourceCodeProject(sourceCodeProject, options);
 
             var liveMutants = new List<GeneratedMutant>();
             if (sourceprojectMutationResult.GeneratedMutants.Count != 0)
@@ -44,6 +45,9 @@ namespace MTOOS.Extension
             {
                 MessageBox.Show("Error at source code project mutation");
             }
+
+            stopwatch.Stop();
+            MessageBox.Show("Done. Execution time: " + stopwatch.ElapsedMilliseconds.ToString() + " ms.");
 
             return liveMutants;
         }

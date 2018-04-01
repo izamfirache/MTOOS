@@ -27,8 +27,10 @@ namespace MTOOS.Extension.Views
         {
             this.InitializeComponent();
             liveMutants.ItemsSource = liveMutantsList;
-            originalProgram.Background = Brushes.LightGray;
-            liveMutant.Background = Brushes.LightGray;
+            mutantCode.VerticalScrollBarVisibility = ScrollBarVisibility.Auto;
+            originalProgram.VerticalScrollBarVisibility = ScrollBarVisibility.Auto;
+            mutantCode.IsReadOnly = true;
+            originalProgram.IsReadOnly = true;
         }
 
         private void LiveMutantslListView_Click(object sender, RoutedEventArgs e)
@@ -60,7 +62,7 @@ namespace MTOOS.Extension.Views
                             formatedMutant[j + 1] = liveMutantLines[j];
                         }
                         formatedMutant[0] = liveMutantLines[0].Replace('{', ' ');
-                        formatedMutant[1] = "   {";
+                        formatedMutant[1] = "{";
                     }
 
                     liveMutantLines = formatedMutant;
@@ -70,36 +72,21 @@ namespace MTOOS.Extension.Views
                 //compare and highlight differences
                 for (int i = 0; i < originalProgramLines.Count(); i++)
                 {
-                    var originalProgramParagraph = 
-                        new Paragraph(new Run(originalProgramLines[i].TrimStart()));
-                    var liveMutantLineParagraph = 
-                        new Paragraph(new Run(liveMutantLines[i].TrimStart()));
-                        
-                    if (originalProgramLines[i].TrimStart() != liveMutantLines[i].TrimStart())
+                    if (liveMutantLines[i].TrimStart() != originalProgramLines[i].TrimStart())
                     {
-                        originalProgramParagraph.Foreground = Brushes.Red;
-                        liveMutantLineParagraph.Foreground = Brushes.Red;
+                        liveMutantLines[i] = liveMutantLines[i].Replace('\r', ' ') + " //MUTATED";
                     }
 
-                    originalProgram.Document.Blocks.Add(originalProgramParagraph);
-                    liveMutant.Document.Blocks.Add(liveMutantLineParagraph);
-                   
+                    originalProgram.Text += originalProgramLines[i] + "\n";
+                    mutantCode.Text += liveMutantLines[i] + "\n";
                 }
             }
         }
 
         private void ClearButton_Click(object sender, RoutedEventArgs e)
         {
-            liveMutant.Document.Blocks.Clear();
-            originalProgram.Document.Blocks.Clear();
-        }
-
-        private void RichTextBox_ScrollChanged(object sender, ScrollChangedEventArgs e)
-        {
-            var textToSync = (sender == originalProgram) ? liveMutant : originalProgram;
-
-            textToSync.ScrollToVerticalOffset(e.VerticalOffset);
-            textToSync.ScrollToHorizontalOffset(e.HorizontalOffset);
+            mutantCode.Text  = "";
+            originalProgram.Text = "";
         }
     }
 }

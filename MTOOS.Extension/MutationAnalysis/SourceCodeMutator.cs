@@ -50,17 +50,12 @@ namespace MTOOS.Extension.MutationAnalysis
                 GenerateMutantsForProject(projectAssembly, projectSemanticModel, options, workspace);
 
             Compilation finalCompilation = GetMutatedCompilation(generatedMutants, sourceCodeProject);
-
-            if (finalCompilation != null)
+            
+            return new SourceCodeMutationResult()
             {
-                return new SourceCodeMutationResult()
-                {
-                    GeneratedMutants = generatedMutants,
-                    OutputPath = projectToAnalyze.OutputFilePath
-                };
-            }
-
-            return null;
+                GeneratedMutants = generatedMutants,
+                OutputPath = projectToAnalyze.OutputFilePath
+            };
         }
 
         private Compilation GetMutatedCompilation(List<GeneratedMutant> generatedMutants,
@@ -115,8 +110,9 @@ namespace MTOOS.Extension.MutationAnalysis
             {
                 return compilation;
             }
-            
-            return null;
+
+            throw new Exception("There was an error while trying to mutate the source code project." +
+                "Can not compile the generated mutants.");
         }
 
         private List<GeneratedMutant> GenerateMutantsForProject(

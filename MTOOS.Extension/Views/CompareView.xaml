@@ -23,36 +23,10 @@
                 </GridView>
             </ListView.View>
         </ListView>
-        <RichTextBox 
-            Name="liveMutant" 
-            HorizontalAlignment="Left" 
-            Height="495" Margin="10,45,0,0" 
-            VerticalAlignment="Top" 
-            Width="410"
-            VerticalScrollBarVisibility="Auto"
-            ScrollViewer.ScrollChanged="RichTextBox_ScrollChanged">
-            <RichTextBox.Resources>
-                <Style TargetType="{x:Type Paragraph}">
-                    <Setter Property="Margin" Value="0" />
-                </Style>
-            </RichTextBox.Resources>
-        </RichTextBox>
-        <RichTextBox 
-            Name="originalProgram" 
-            HorizontalAlignment="Left" 
-            Height="495" Margin="425,45,0,0" 
-            VerticalAlignment="Top" 
-            Width="399"
-            VerticalScrollBarVisibility="Auto"
-            ScrollViewer.ScrollChanged="RichTextBox_ScrollChanged">
-            <RichTextBox.Resources>
-                <Style TargetType="{x:Type Paragraph}">
-                    <Setter Property="Margin" Value="0" />
-                </Style>
-            </RichTextBox.Resources>
-        </RichTextBox>
         <Label Content="Mutated code" HorizontalAlignment="Left" Margin="165,19,0,0" VerticalAlignment="Top" Width="93"/>
         <Label Content="Original source code" HorizontalAlignment="Left" Margin="553,19,0,0" VerticalAlignment="Top" Width="128"/>
         <Button Content="Clear" HorizontalAlignment="Left" Margin="829,521,0,0" VerticalAlignment="Top" Width="39" RenderTransformOrigin="-0.416,3.729" Click="ClearButton_Click"/>
+        <TextBox x:Name="mutantCode" HorizontalAlignment="Left" Height="495" Margin="10,45,0,0" TextWrapping="Wrap" VerticalAlignment="Top" Width="400" Background="{DynamicResource {x:Static SystemColors.ControlLightBrushKey}}"/>
+        <TextBox x:Name="originalProgram" HorizontalAlignment="Left" Height="495" Margin="414,45,0,0" TextWrapping="Wrap" VerticalAlignment="Top" Width="410" Background="{DynamicResource {x:Static SystemColors.ControlLightBrushKey}}"/>
     </Grid>
 </UserControl>

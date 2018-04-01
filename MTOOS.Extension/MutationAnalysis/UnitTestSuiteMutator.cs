@@ -47,17 +47,11 @@ namespace MTOOS.Extension.MutationAnalysis
             Compilation finalCompilation = GetMutatedCompilation(generatedUnitTestMutants, unitTestProject,
                 sourceCodeMutationResult);
 
-            if (finalCompilation != null)
+            return new UnitTestMutationResult()
             {
-                return new UnitTestMutationResult()
-                {
-                    MutatedUnitTestProjectCompilation = finalCompilation,
-                    GeneratedUnitTestMutants = generatedUnitTestMutants,
-                    OutputPath = projectToAnalyze.OutputFilePath
-                };
-            }
-
-            return null;
+                GeneratedUnitTestMutants = generatedUnitTestMutants,
+                OutputPath = projectToAnalyze.OutputFilePath
+            };
         }
 
         private Compilation GetMutatedCompilation(
@@ -131,7 +125,8 @@ namespace MTOOS.Extension.MutationAnalysis
                 return compilation;
             }
 
-            return null;
+            throw new Exception("There was an error while trying to mutate the unit test project." +
+                "Can not compile the generated unit test mutants.");
         }
 
         private List<GeneratedMutant> GenerateMutantsForUnitTestProject(
