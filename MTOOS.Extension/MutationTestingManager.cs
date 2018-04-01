@@ -24,6 +24,8 @@ namespace MTOOS.Extension
         public List<Mutant> PerformMutationTestingOnProject(DTE2 dte, Project sourceCodeProject, 
             Project unitTestProject, List<string> options)
         {
+            Stopwatch watch = new Stopwatch();
+            watch.Start();
             var liveMutants = new List<Mutant>();
 
             Solution2 solution = (Solution2)dte.Solution;
@@ -43,7 +45,7 @@ namespace MTOOS.Extension
             if (mutatedClasses.Count != 0)
             {
                 //rethink this !! -- reload or rebuild solution/project
-                dte.ExecuteCommand("CloseAll");
+                //dte.ExecuteCommand("CloseAll");
 
                 //TODO: to avoid messing up the original project with the mutants
                 //create a new project with the mutation analysis result
@@ -60,15 +62,15 @@ namespace MTOOS.Extension
                     var mutatedUnitTestProject = MutateUnitTestProject(solution, 
                         solutionBuild2, mutatedClasses, unitTestProject);
 
-                    dte.ExecuteCommand("CloseAll");
+                    //dte.ExecuteCommand("CloseAll");
 
                     liveMutants = RunTheMutatedUnitTestsUsingNUnitConsole(mutatedUnitTestProject, dte, mutatedClasses);
 
                     DeleteAllNonRelevantFiles(mutatedUnitTestProject, sourceCodeProject, 
                         solutionBuild2, liveMutants);
 
-                    dte.ExecuteCommand("TestExplorer.ShowTestExplorer");
-                    dte.ExecuteCommand("TestExplorer.RunAllTests");
+                    //dte.ExecuteCommand("TestExplorer.ShowTestExplorer");
+                    //dte.ExecuteCommand("TestExplorer.RunAllTests");
 
                     //MessageBox.Show("Mutation testing Done. Please check the mutants in the selected" +
                     //    " project. Select the original file and the mutant in Solution Explorer, " +
@@ -87,6 +89,8 @@ namespace MTOOS.Extension
                     "Might be a problem with the mutation process."));
             }
 
+            watch.Stop();
+            MessageBox.Show("Execution time: " + watch.ElapsedMilliseconds.ToString() + " ms.");
             return liveMutants;
         }
 
