@@ -31,25 +31,27 @@ namespace MTOOS.Extension
              var sourceprojectMutationResult = 
                 sourceCodeMutator.PerformMutationAnalysisOnSourceCodeProject(sourceCodeProject, options);
 
-            var liveMutants = new List<GeneratedMutant>();
-            if (sourceprojectMutationResult.GeneratedMutants.Count != 0)
-            {
-                var unitTestProjectMutation =
-                    MutateUnitTestProject(solution, sourceprojectMutationResult, 
-                    unitTestProject, sourceCodeProject);
-                
-                liveMutants = RunTheMutatedUnitTestSuiteUsingNUnitConsole
-                    (unitTestProjectMutation, dte, sourceprojectMutationResult.GeneratedMutants);
-            }
-            else
-            {
-                MessageBox.Show("Error at source code project mutation");
-            }
+            //var liveMutants = new List<GeneratedMutant>();
+            //if (sourceprojectMutationResult.GeneratedMutants.Count != 0)
+            //{
+            //    var unitTestProjectMutation =
+            //        MutateUnitTestProject(solution, sourceprojectMutationResult, 
+            //        unitTestProject, sourceCodeProject);
+
+            //    liveMutants = RunTheMutatedUnitTestSuiteUsingNUnitConsole
+            //        (unitTestProjectMutation, dte, sourceprojectMutationResult.GeneratedMutants);
+            //}
+            //else
+            //{
+            //    MessageBox.Show("Error at source code project mutation");
+            //}
 
             stopwatch.Stop();
             MessageBox.Show("Done. Execution time: " + stopwatch.ElapsedMilliseconds.ToString() + " ms.");
 
-            return liveMutants;
+            //return liveMutants;
+
+            return sourceprojectMutationResult.GeneratedMutants;
         }
 
         private UnitTestMutationResult MutateUnitTestProject(Solution2 solution, 
