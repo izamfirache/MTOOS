@@ -21,108 +21,75 @@ namespace MTOOS.Extension
 {
     public class MutationTestingManager
     {
-        public List<Mutant> PerformMutationTestingOnProject(DTE2 dte, Project sourceCodeProject, 
+        public List<GeneratedMutant> PerformMutationTestingOnProject(DTE2 dte, Project sourceCodeProject, 
             Project unitTestProject, List<string> options)
         {
-            Stopwatch watch = new Stopwatch();
-            watch.Start();
-            var liveMutants = new List<Mutant>();
-
+            Stopwatch stopwatch = Stopwatch.StartNew();
             Solution2 solution = (Solution2)dte.Solution;
-            var mutationAnalyzer = new SourceCodeMutator(solution);
+            var sourceCodeMutator = new SourceCodeMutator(solution);
 
-            var mutantsFolderPath = Path.Combine(Path.GetDirectoryName(sourceCodeProject.FullName), "Mutants");
-            if (Directory.Exists(mutantsFolderPath))
-            {
-                Directory.Delete(mutantsFolderPath);
-            }
-            sourceCodeProject.ProjectItems.AddFolder("Mutants");
-            sourceCodeProject.Save();
+             var sourceprojectMutationResult = 
+                sourceCodeMutator.PerformMutationAnalysisOnSourceCodeProject(sourceCodeProject, options);
 
+            //var liveMutants = new List<GeneratedMutant>();
+            //if (sourceprojectMutationResult.GeneratedMutants.Count != 0)
+            //{
+            //    var unitTestProjectMutation =
+            //        MutateUnitTestProject(solution, sourceprojectMutationResult, 
+            //        unitTestProject, sourceCodeProject);
 
-            List<MutationInformation> mutatedClasses = mutationAnalyzer.PerformMutationAnalysisOnProject
-                (sourceCodeProject, options);
-            if (mutatedClasses.Count != 0)
-            {
-                //rethink this !! -- reload or rebuild solution/project
-                //dte.ExecuteCommand("CloseAll");
+            //    liveMutants = RunTheMutatedUnitTestSuiteUsingNUnitConsole
+            //        (unitTestProjectMutation, dte, sourceprojectMutationResult.GeneratedMutants);
+            //}
+            //else
+            //{
+            //    MessageBox.Show("Error at source code project mutation");
+            //}
 
-                //TODO: to avoid messing up the original project with the mutants
-                //create a new project with the mutation analysis result
-                //compile that project and add the reference to the unit test mutated classes
+            stopwatch.Stop();
+            MessageBox.Show("Done. Execution time: " + stopwatch.ElapsedMilliseconds.ToString() + " ms.");
 
-                //build the selected project in order for the new types to be visible
-                SolutionBuild2 solutionBuild2 = (SolutionBuild2)sourceCodeProject.DTE.Solution.SolutionBuild;
-                solutionBuild2.BuildProject(solutionBuild2.ActiveConfiguration.Name,
-                    sourceCodeProject.UniqueName, true);
+            //return liveMutants;
 
-                bool compiledOK = (solutionBuild2.LastBuildInfo == 0);
-                if (compiledOK)
-                {
-                    var mutatedUnitTestProject = MutateUnitTestProject(solution, 
-                        solutionBuild2, mutatedClasses, unitTestProject);
-
-                    //dte.ExecuteCommand("CloseAll");
-
-                    liveMutants = RunTheMutatedUnitTestsUsingNUnitConsole(mutatedUnitTestProject, dte, mutatedClasses);
-
-                    DeleteAllNonRelevantFiles(mutatedUnitTestProject, sourceCodeProject, 
-                        solutionBuild2, liveMutants);
-
-                    //dte.ExecuteCommand("TestExplorer.ShowTestExplorer");
-                    //dte.ExecuteCommand("TestExplorer.RunAllTests");
-
-                    //MessageBox.Show("Mutation testing Done. Please check the mutants in the selected" +
-                    //    " project. Select the original file and the mutant in Solution Explorer, " +
-                    //    "right click and press 'Test by mutation...'. This way you will see the untested " +
-                    //    "areas in your code.",
-                    //    "Mutation Testing Done.", MessageBoxButtons.OK, MessageBoxIcon.Information);
-                }
-                else
-                {
-                    MessageBox.Show("Compilation errors after mutation.");
-                }
-            }
-            else
-            {
-                MessageBox.Show(string.Format("No mutants generated. " +
-                    "Might be a problem with the mutation process."));
-            }
-
-            watch.Stop();
-            MessageBox.Show("Execution time: " + watch.ElapsedMilliseconds.ToString() + " ms.");
-            return liveMutants;
+            return sourceprojectMutationResult.GeneratedMutants;
         }
 
-        private Project MutateUnitTestProject(Solution2 solution, SolutionBuild2 solutionBuild, 
-            List<MutationInformation> mutatedClasses, Project unitTestProject)
+        private UnitTestMutationResult MutateUnitTestProject(Solution2 solution, 
+            SourceCodeMutationResult sourceCodeMutationResult, Project unitTestProject, 
+            Project sourceCodeProject)
         {
-            unitTestProject.ProjectItems.AddFolder("MutationCompiledUnits");
+            var unitTestsMutator = new UnitTestSuiteMutator(solution);
+            var unitTestMutationResult = 
+                unitTestsMutator.PerformMutationForUnitTestProject(unitTestProject, sourceCodeMutationResult, 
+                sourceCodeProject);
+
+            unitTestProject.ProjectItems.AddFromFile(unitTestsMutator.MutatedUnitTestCodePath);
             unitTestProject.Save();
 
-            var unitTestsMutator = new UnitTestSuiteMutator(solution, mutatedClasses);
-            unitTestsMutator.PerformMutationForUnitTestProject(unitTestProject);
-
-            solutionBuild.BuildProject(solutionBuild.ActiveConfiguration.Name,
+            SolutionBuild2 solutionBuild2 = (SolutionBuild2)unitTestProject.DTE.Solution.SolutionBuild;
+            solutionBuild2.BuildProject(solutionBuild2.ActiveConfiguration.Name,
                 unitTestProject.UniqueName, true);
 
-            return unitTestProject;
+            return unitTestMutationResult;
         }
 
-        private List<Mutant> RunTheMutatedUnitTestsUsingNUnitConsole(Project unitTestProject, DTE2 dte, 
-            List<MutationInformation> mutationAnalysis)
+        private List<GeneratedMutant> RunTheMutatedUnitTestSuiteUsingNUnitConsole(
+            UnitTestMutationResult unitTestProjectMutationResult, 
+            DTE2 dte, 
+            List<GeneratedMutant> mutationAnalysis)
         {
-            var unitTestAssemblyPath = GetAssemblyPath(unitTestProject);
             string solutionDir = Path.GetDirectoryName(dte.Solution.FullName);
             var packagesFolder = Path.Combine(solutionDir, "packages");
             var NUnitConsolePath = Path.Combine(packagesFolder,
                 "NUnit.ConsoleRunner.3.8.0\\tools\\nunit3-console.exe"); // TODO: avoid the version dependency!!
-            var nunitOutputFilePath = Path.GetDirectoryName(unitTestAssemblyPath);
+
+            var nunitOutputFilePath = Path.GetDirectoryName(unitTestProjectMutationResult.OutputPath);
 
             var processStartInfo = new ProcessStartInfo
             {
                 FileName = string.Format(@"""{0}""", NUnitConsolePath),
-                Arguments = string.Format(@"--work=""{0}"" ""{1}""", nunitOutputFilePath, unitTestAssemblyPath),
+                Arguments = string.Format(@"--work=""{0}"" ""{1}""", nunitOutputFilePath,
+                    unitTestProjectMutationResult.OutputPath),
                 UseShellExecute = false,
                 CreateNoWindow = true
             };
@@ -141,9 +108,10 @@ namespace MTOOS.Extension
             }
 
             var NUnitResultXmlFilePath = Path.Combine(Path.GetDirectoryName(
-                        GetAssemblyPath(unitTestProject)), "TestResult.xml");
+                        Path.GetDirectoryName(unitTestProjectMutationResult.OutputPath)),
+                        @"Debug\\TestResult.xml");
 
-            List<Mutant> liveMutants = new List<Mutant>();
+            List<GeneratedMutant> liveMutants = new List<GeneratedMutant>();
             if (File.Exists(NUnitResultXmlFilePath))
             {
                 liveMutants = AnalyzeNUnitTestResultFile(NUnitResultXmlFilePath, mutationAnalysis);
@@ -152,37 +120,45 @@ namespace MTOOS.Extension
             return liveMutants;
         }
 
-        private List<Mutant> AnalyzeNUnitTestResultFile(string nUnitResultXmlFilePath, 
-            List<MutationInformation> mutationInformation)
+        private List<GeneratedMutant> AnalyzeNUnitTestResultFile(string nUnitResultXmlFilePath, 
+            List<GeneratedMutant> generatedMutants)
         {
-            List<Mutant> mutationAnalysis = new List<Mutant>();
+            List<GeneratedMutant> liveMutants = new List<GeneratedMutant>();
             XmlDocument xmlDocument = new XmlDocument();
             xmlDocument.Load(nUnitResultXmlFilePath);
 
             XmlNode testRunNode = xmlDocument.SelectSingleNode("test-run");
             XmlNode assemblyTestSuiteNode = testRunNode.SelectSingleNode("test-suite");
-            XmlNode testSuiteNode = assemblyTestSuiteNode.SelectSingleNode("test-suite");
 
-            if (testSuiteNode.Attributes["type"].Value == "TestSuite")
+            foreach (XmlNode testSuiteNode in assemblyTestSuiteNode.SelectNodes("test-suite"))
             {
-                foreach (XmlNode testFixtureNode in testSuiteNode.SelectNodes("test-suite"))
+                if (testSuiteNode.Attributes["type"].Value == "TestSuite")
                 {
-                    if (testFixtureNode.Attributes["name"].Value.Contains("Mutant"))
+                    foreach (XmlNode testFixtureNode in testSuiteNode.SelectNodes("test-suite"))
                     {
-                        if (testFixtureNode.Attributes["result"].Value == "Passed")
+                        if (testFixtureNode.Attributes["type"].Value == "TestFixture")
                         {
-                            foreach (MutationInformation mi in mutationInformation)
+                            if (testFixtureNode.Attributes["name"].Value.Contains("Mutant"))
                             {
-                                if (testFixtureNode.Attributes["name"].Value.Contains(mi.MutantName))
+                                if (testFixtureNode.Attributes["result"].Value == "Passed")
                                 {
-                                    mutationAnalysis.Add(new Mutant()
+                                    foreach (GeneratedMutant mi in generatedMutants)
                                     {
-                                        Id = Guid.NewGuid(),
-                                        Name = testFixtureNode.Attributes["name"].Value,
-                                        Status = testFixtureNode.Attributes["result"].Value,
-                                        MutatedCode = mi.MutatedCode,
-                                        OriginalProgramCode = mi.OriginalProgramCode
-                                    });
+                                        if (testFixtureNode.Attributes["name"].Value.Contains(mi.MutantName))
+                                        {
+                                            liveMutants.Add(new GeneratedMutant()
+                                            {
+                                                Id = mi.Id,
+                                                MutantName = mi.MutantName,
+                                                Status = testFixtureNode.Attributes["result"].Value,
+                                                MutatedCode = mi.MutatedCode,
+                                                OriginalProgramCode = mi.OriginalProgramCode,
+                                                OriginalClassName = mi.OriginalClassName,
+                                                HaveDeletedStatement = mi.HaveDeletedStatement,
+                                                MutatorType = mi.MutatorType
+                                            });
+                                        }
+                                    }
                                 }
                             }
                         }
@@ -190,70 +166,7 @@ namespace MTOOS.Extension
                 }
             }
 
-            return mutationAnalysis;
-        }
-
-        private void DeleteAllNonRelevantFiles(Project unitTestProject, Project selectedProject,
-            SolutionBuild2 solutionBuild, List<Mutant> liveMutants)
-        {
-            //delete all the unit test mutated classes since they are relevant only
-            //to run the unit tests over the mutants
-            foreach (ProjectItem projItem in unitTestProject.ProjectItems)
-            {
-                if (projItem.Name == "MutationCompiledUnits")
-                {
-                    //remove it from the VS project
-                    projItem.Remove();
-
-                    //remove it from the disk also
-                    var path = Path.Combine(Path.GetDirectoryName(unitTestProject.FullName), "MutationCompiledUnits");
-                    Directory.Delete(path, true);
-                    break;
-                }
-            }
-            unitTestProject.Save();
-            solutionBuild.BuildProject(solutionBuild.ActiveConfiguration.Name,
-                unitTestProject.UniqueName, true);
-
-            //delete all 'killed' mutants since the code they mutated is properly tested
-            //and save only the 'live' ones to highlight the untested code
-            foreach (ProjectItem projItem in selectedProject.ProjectItems)
-            {
-                if (projItem.Name == "Mutants")
-                {
-                    foreach (ProjectItem pi in projItem.ProjectItems)
-                    {
-                        var mutantName = pi.Name.Replace(".cs", "");
-                        if (!liveMutants.Any(m => m.Name.Contains(mutantName)))
-                        {
-                            //remove it from the VS project
-                            pi.Remove();
-
-                            //remove it from the disk also
-                            var path = Path.Combine(Path.GetDirectoryName(selectedProject.FullName),
-                                string.Format(@"{0}\\{1}", "Mutants", pi.Name));
-                            File.Delete(path);
-                        }
-                    }
-                    break;
-                }
-            }
-            selectedProject.Save();
-            solutionBuild.BuildProject(solutionBuild.ActiveConfiguration.Name,
-                selectedProject.UniqueName, true);
-        }
-
-        private string GetAssemblyPath(Project project)
-        {
-            string fullPath = project.Properties.Item("FullPath").Value.ToString();
-            string outputPath = project.ConfigurationManager.ActiveConfiguration.
-                Properties.Item("OutputPath").Value.ToString();
-
-            string outputDir = Path.Combine(fullPath, outputPath);
-            string outputFileName = project.Properties.Item("OutputFileName").Value.ToString();
-            string assemblyPath = Path.Combine(outputDir, outputFileName);
-
-            return assemblyPath;
+            return liveMutants;
         }
         private Project GetUnitTestProject(Solution2 solution)
         {

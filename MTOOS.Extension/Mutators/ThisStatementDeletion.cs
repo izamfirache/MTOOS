@@ -40,7 +40,7 @@ namespace MTOOS.Extension.Mutators
                             var mutatedNamespaceRoot = _namespaceRootNode.RemoveNode(node,
                                 SyntaxRemoveOptions.KeepLeadingTrivia | 
                                 SyntaxRemoveOptions.KeepTrailingTrivia);
-                            _mutantCreator.CreateNewMutant(mutatedNamespaceRoot);
+                            _mutantCreator.CreateNewMutant(mutatedNamespaceRoot, true);
 
                             return node;
                         }
@@ -55,7 +55,7 @@ namespace MTOOS.Extension.Mutators
                             var mutatedNamespaceRoot = _namespaceRootNode.RemoveNode(node,
                                 SyntaxRemoveOptions.KeepLeadingTrivia |
                                 SyntaxRemoveOptions.KeepTrailingTrivia);
-                            _mutantCreator.CreateNewMutant(mutatedNamespaceRoot);
+                            _mutantCreator.CreateNewMutant(mutatedNamespaceRoot, true);
 
                             return node;
                         }
@@ -71,7 +71,7 @@ namespace MTOOS.Extension.Mutators
                         var mutatedNamespaceRoot = _namespaceRootNode.RemoveNode(node,
                             SyntaxRemoveOptions.KeepLeadingTrivia |
                             SyntaxRemoveOptions.KeepTrailingTrivia);
-                        _mutantCreator.CreateNewMutant(mutatedNamespaceRoot);
+                        _mutantCreator.CreateNewMutant(mutatedNamespaceRoot, true);
 
                         return node;
                     }

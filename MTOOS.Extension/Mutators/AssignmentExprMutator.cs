@@ -50,7 +50,7 @@ namespace MTOOS.Extension.Mutators
                             .WithLeadingTrivia(SyntaxFactory.Space))));
 
                 var mutatedNamespaceRoot = _namespaceRootNode.ReplaceNode(node, variableDeclarationWithoutAssignmentNode);
-                _mutantCreator.CreateNewMutant(mutatedNamespaceRoot);
+                _mutantCreator.CreateNewMutant(mutatedNamespaceRoot, false);
             }
             else
             {

@@ -16,7 +16,7 @@ namespace MTOOS.Extension.Views
     public partial class MutationAnalysisView : UserControl
     {
         public List<string> CheckedOptions;
-        public List<Mutant> GeneratedMutantList = new List<Mutant>();
+        public List<GeneratedMutant> GeneratedMutantList = new List<GeneratedMutant>();
 
         /// <summary>
         /// Initializes a new instance of the <see cref="MutantKillerWindowControl"/> class.
@@ -136,10 +136,10 @@ namespace MTOOS.Extension.Views
         private List<string> GetCheckedOptions()
         {
             var checkedOptions = new List<string>();
-            if (AdditiveAndMultiplicativeOp.IsChecked == true) { checkedOptions.Add("1"); }
-            if (AssignmentExprMutator.IsChecked == true) { checkedOptions.Add("2"); }
-            if (RelationalAndEqualityOp.IsChecked == true) { checkedOptions.Add("3"); }
-            if (ThisStatementDeletion.IsChecked == true) { checkedOptions.Add("4"); }
+            if (BoundaryOpMutator.IsChecked == true) { checkedOptions.Add("1"); }
+            if (RelationalAndEqualityOpMutator.IsChecked == true) { checkedOptions.Add("2"); }
+            if (RemoveNonBasicConditionalsMutator.IsChecked == true) { checkedOptions.Add("3"); }
+            if (MathOperatorsMutator.IsChecked == true) { checkedOptions.Add("4"); }
 
             return checkedOptions;
         }

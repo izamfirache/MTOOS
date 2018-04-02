@@ -7,8 +7,8 @@
              Background="{DynamicResource {x:Static SystemColors.ActiveCaptionBrushKey}}"
              Foreground="{DynamicResource {x:Static vsshell:VsBrushes.WindowTextKey}}"
              mc:Ignorable="d"
-             d:DesignHeight="550" d:DesignWidth="700W"
-             Name="MutationAnalysis">
+             d:DesignHeight="550"
+             Name="MutationAnalysis" Width="774.4">
     <Grid x:Name="grdMutationAnalysist"  Height="500" Margin="87,56,19.8,-5.6">
         <Grid.ColumnDefinitions>
             <ColumnDefinition Width="66*"/>
@@ -17,27 +17,32 @@
             <ColumnDefinition Width="40*"/>
             <ColumnDefinition Width="312*"/>
         </Grid.ColumnDefinitions>
-        <Button Content="Start a new Mutation Testing session" HorizontalAlignment="Left" Margin="35,370,0,0" VerticalAlignment="Top" Width="236" RenderTransformOrigin="0.509,2.213" Height="40" Grid.Column="4" Click="StartMutationTesting"/>
+        <Button Content="Start a new Mutation Testing session" HorizontalAlignment="Left" Margin="35.6,370,0,0" VerticalAlignment="Top" Width="259" RenderTransformOrigin="0.509,2.213" Height="40" Grid.Column="4" Click="StartMutationTesting"/>
         <Label Content="Mutation Testing for Object Oriented Software - MTOOS" HorizontalAlignment="Left" Margin="10,10,0,0" VerticalAlignment="Top" Width="523" Grid.ColumnSpan="5" FontSize="20"/>
-        <CheckBox x:Name="AdditiveAndMultiplicativeOp" Content="Mutate additive and multiplicative operators" HorizontalAlignment="Left" Margin="29,119,0,0" VerticalAlignment="Top" Grid.ColumnSpan="5" Width="267"/>
+        <CheckBox x:Name="BoundaryOpMutator" Content="Boundary Operator Mutator - BOM" HorizontalAlignment="Left" Margin="0,124,0,0" VerticalAlignment="Top" Grid.ColumnSpan="4" Width="267"/>
         <Label Content="Choose the mutations you want to perform:" HorizontalAlignment="Left" Margin="21,85,0,0" VerticalAlignment="Top" RenderTransformOrigin="0.362,-0.028" Grid.ColumnSpan="5" Width="295" Height="29"/>
-        <CheckBox x:Name="AssignmentExprMutator" Content="Mutate assignment expressions" HorizontalAlignment="Left" Margin="29,139,0,0" VerticalAlignment="Top" Grid.ColumnSpan="5" Width="288"/>
-        <CheckBox x:Name="RelationalAndEqualityOp" Content="Mutate relational and equality operators" HorizontalAlignment="Left" Margin="29,159,0,0" VerticalAlignment="Top" Grid.ColumnSpan="5" Width="257"/>
-        <CheckBox x:Name="ThisStatementDeletion" Content="Delete 'this' statements" HorizontalAlignment="Left" Margin="29,179,0,0" VerticalAlignment="Top" Grid.ColumnSpan="3" Width="165"/>
-        <ListView x:Name="MutantList" 
-                          Grid.Column="4" 
-                          HorizontalAlignment="Left" 
-                          Height="313" Margin="35,52,0,0" VerticalAlignment="Top" Width="236">
+        <CheckBox x:Name="RelationalAndEqualityOpMutator" 
+                  Content="Relational and Equality Operator Mutator - REOM" HorizontalAlignment="Left" Margin="0,144,0,0" VerticalAlignment="Top" Grid.ColumnSpan="5" Width="285"/>
+        <CheckBox x:Name="RemoveNonBasicConditionalsMutator" 
+                  Content="Replace Non Basic Conditions Mutator - RNBCM" HorizontalAlignment="Left" Margin="0,164,0,0" VerticalAlignment="Top" Grid.ColumnSpan="5" Width="285"/>
+        <ListView 
+            x:Name="MutantList"
+            Grid.Column="4" 
+            HorizontalAlignment="Left" 
+            Height="313" Margin="34.6,52,0,0" 
+            VerticalAlignment="Top" Width="260">
             <ListView.View>
                 <GridView>
-                    <GridViewColumn/>
+                    <GridViewColumn 
+                        Header="Generated mutants" 
+                        Width="255"/>
                 </GridView>
             </ListView.View>
         </ListView>
         <ListView x:Name="solutionProjectList" 
                           HorizontalAlignment="Left" 
                           Height="172" Margin="3,288,0,0" 
-                          VerticalAlignment="Top" Width="215" 
+                          VerticalAlignment="Top" Width="233" 
                           Grid.ColumnSpan="3">
             <ListView.View>
                 <GridView>
@@ -55,5 +60,10 @@
             </ListView.View>
         </ListView>
         <Label Content="Select a project and a unit test project" HorizontalAlignment="Left" VerticalAlignment="Top" Margin="0,262,0,0" Grid.ColumnSpan="5" Width="331"/>
+        <CheckBox 
+            x:Name="MathOperatorsMutator" 
+            Content="Math Operators Mutator - MOM" 
+            HorizontalAlignment="Left" Margin="0,184,0,0" 
+            VerticalAlignment="Top" Grid.ColumnSpan="4" Width="285"/>
     </Grid>
 </UserControl>
