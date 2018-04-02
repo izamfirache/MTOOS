@@ -19,15 +19,13 @@ namespace MTOOS.Extension.Mutators
         private int _mutantVersion = 0;
         private ClassDeclarationSyntax _originalClassRootNode;
         private List<GeneratedMutant> GeneratedMutants;
-        private Workspace _workspace;
+        public string MutatorType { get; set; }
 
-        public MutantCreator(string className, ClassDeclarationSyntax originalClassRootNode,
-            Workspace workspace)
+        public MutantCreator(string className, ClassDeclarationSyntax originalClassRootNode)
         {
             _className = className;
             _originalClassRootNode = originalClassRootNode;
             GeneratedMutants = new List<GeneratedMutant>();
-            _workspace = workspace;
         }
 
         public void CreateNewMutant(SyntaxNode classSyntaxNode, bool isDeletionOperator)
@@ -52,7 +50,8 @@ namespace MTOOS.Extension.Mutators
                 MutatedCodeRoot = finalMutantCodeRoot,
                 OriginalProgramCode = _originalClassRootNode.ToFullString(),
                 MutatedCode = finalMutantCodeRoot.ToFullString(),
-                HaveDeletedStatement = isDeletionOperator
+                HaveDeletedStatement = isDeletionOperator,
+                MutatorType = MutatorType
             });
         }
 

@@ -154,7 +154,8 @@ namespace MTOOS.Extension
                                                 MutatedCode = mi.MutatedCode,
                                                 OriginalProgramCode = mi.OriginalProgramCode,
                                                 OriginalClassName = mi.OriginalClassName,
-                                                HaveDeletedStatement = mi.HaveDeletedStatement
+                                                HaveDeletedStatement = mi.HaveDeletedStatement,
+                                                MutatorType = mi.MutatorType
                                             });
                                         }
                                     }

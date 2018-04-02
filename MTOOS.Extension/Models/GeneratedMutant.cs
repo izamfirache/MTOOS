@@ -14,6 +14,7 @@ namespace MTOOS.Extension.Models
         public string MutantName { get; set; }
         public string OriginalClassName { get; set; }
         public string Status { get; set; }
+        public string MutatorType { get; set; }
 
         public ClassDeclarationSyntax OriginalCodeRoot { get; set; }
         public ClassDeclarationSyntax MutatedCodeRoot { get; set; }
@@ -28,7 +29,7 @@ namespace MTOOS.Extension.Models
 
         public override string ToString()
         {
-            return MutantName + " - " + Status;
+            return MutantName + " - " + MutatorType;
         }
     }
 }

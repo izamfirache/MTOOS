@@ -35,7 +35,7 @@ namespace MTOOS.Extension.Mutators
             //check if the condition does not involve realational or equality operators
             //as the main operator between the only two members in that expression
 
-            if (!CheckIfNodeIsBasicIfStatement(node.Condition))
+            if (!(node.Condition is BinaryExpressionSyntax))
             {
                 var trueLiteralExpression = SyntaxFactory.LiteralExpression(SyntaxKind.TrueLiteralExpression);
                 var falseLiteralExpression = SyntaxFactory.LiteralExpression(SyntaxKind.FalseLiteralExpression);

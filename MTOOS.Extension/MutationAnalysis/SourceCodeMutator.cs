@@ -140,11 +140,12 @@ namespace MTOOS.Extension.MutationAnalysis
                         ClassDeclarationSyntax classSyntaxNode = namespaceClasses.ElementAt(0);
                         var className = classSyntaxNode.Identifier.Value.ToString();
 
-                        var mutantCreator = new MutantCreator(className, classSyntaxNode, workspace);
+                        var mutantCreator = new MutantCreator(className, classSyntaxNode);
 
                         //mutate boundary operators
                         if (options.Contains("1"))
                         {
+                            mutantCreator.MutatorType = "BOM";
                             var mathOperatorMutator = new BoundaryOpMutator
                                 (classSyntaxNode, mutantCreator);
                             mathOperatorMutator.Visit(classSyntaxNode);
@@ -153,7 +154,8 @@ namespace MTOOS.Extension.MutationAnalysis
                         //nagate relational and equality operators
                         if (options.Contains("2"))
                         {
-                            var mathOperatorMutator = new RelationalAndEqualityOp
+                            mutantCreator.MutatorType = "REOM";
+                            var mathOperatorMutator = new RelationalAndEqualityOpMutator
                                 (classSyntaxNode, mutantCreator);
                             mathOperatorMutator.Visit(classSyntaxNode);
                         }
@@ -162,6 +164,7 @@ namespace MTOOS.Extension.MutationAnalysis
                         if (options.Contains("3"))
                         {
                             //replace complex boolean expressions with true or false
+                            mutantCreator.MutatorType = "RNBCM";
                             var mathOperatorMutator = new RemoveNonBasicConditionalsMutator
                                 (classSyntaxNode, mutantCreator);
                             mathOperatorMutator.Visit(classSyntaxNode);
