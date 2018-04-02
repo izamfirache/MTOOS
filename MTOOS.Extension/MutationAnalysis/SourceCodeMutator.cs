@@ -170,6 +170,15 @@ namespace MTOOS.Extension.MutationAnalysis
                             mathOperatorMutator.Visit(classSyntaxNode);
                         }
 
+                        //mutate math operators
+                        if (options.Contains("4"))
+                        {
+                            mutantCreator.MutatorType = "MOM";
+                            var mathOperatorMutator = new MathOperatorsMutator
+                                (classSyntaxNode, mutantCreator, projectSemanticModel);
+                            mathOperatorMutator.Visit(classSyntaxNode);
+                        }
+
                         //if (options.Contains("1"))
                         //{
                         //    //apply additive and multiplicative mutations

@@ -66,6 +66,20 @@ namespace MTOOS.Extension.Mutators
                     .WithTrailingTrivia(SyntaxFactory.Space);
             }
 
+            // && becomes ||
+            if (expressionOperator.IsKind(SyntaxKind.AmpersandAmpersandToken))
+            {
+                newToken = SyntaxFactory.Token(SyntaxKind.BarBarToken)
+                    .WithTrailingTrivia(SyntaxFactory.Space);
+            }
+
+            // || becomes &&
+            if (expressionOperator.IsKind(SyntaxKind.BarBarToken))
+            {
+                newToken = SyntaxFactory.Token(SyntaxKind.AmpersandAmpersandToken)
+                    .WithTrailingTrivia(SyntaxFactory.Space);
+            }
+
             // create a new mutant class
             if (!newToken.IsKind(SyntaxKind.None))
             {

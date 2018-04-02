@@ -25,7 +25,6 @@
                   Content="Relational and Equality Operator Mutator - REOM" HorizontalAlignment="Left" Margin="0,144,0,0" VerticalAlignment="Top" Grid.ColumnSpan="5" Width="285"/>
         <CheckBox x:Name="RemoveNonBasicConditionalsMutator" 
                   Content="Replace Non Basic Conditions Mutator - RNBCM" HorizontalAlignment="Left" Margin="0,164,0,0" VerticalAlignment="Top" Grid.ColumnSpan="5" Width="285"/>
-        <CheckBox x:Name="ThisStatementDeletion" Content="Delete 'this' statements" HorizontalAlignment="Left" Margin="0,184,0,0" VerticalAlignment="Top" Grid.ColumnSpan="3" Width="165"/>
         <ListView 
             x:Name="MutantList"
             Grid.Column="4" 
@@ -36,7 +35,7 @@
                 <GridView>
                     <GridViewColumn 
                         Header="Generated mutants" 
-                        Width="260"/>
+                        Width="255"/>
                 </GridView>
             </ListView.View>
         </ListView>
@@ -61,5 +60,10 @@
             </ListView.View>
         </ListView>
         <Label Content="Select a project and a unit test project" HorizontalAlignment="Left" VerticalAlignment="Top" Margin="0,262,0,0" Grid.ColumnSpan="5" Width="331"/>
+        <CheckBox 
+            x:Name="MathOperatorsMutator" 
+            Content="Math Operators Mutator - MOM" 
+            HorizontalAlignment="Left" Margin="0,184,0,0" 
+            VerticalAlignment="Top" Grid.ColumnSpan="4" Width="285"/>
     </Grid>
 </UserControl>

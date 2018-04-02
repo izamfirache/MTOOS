@@ -20,7 +20,7 @@
                 <GridView>
                     <GridViewColumn
                             Header="Generated mutants" 
-                            Width="217">
+                            Width="215">
                     </GridViewColumn>
                 </GridView>
             </ListView.View>

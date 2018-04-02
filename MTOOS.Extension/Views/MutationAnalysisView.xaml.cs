@@ -139,7 +139,7 @@ namespace MTOOS.Extension.Views
             if (BoundaryOpMutator.IsChecked == true) { checkedOptions.Add("1"); }
             if (RelationalAndEqualityOpMutator.IsChecked == true) { checkedOptions.Add("2"); }
             if (RemoveNonBasicConditionalsMutator.IsChecked == true) { checkedOptions.Add("3"); }
-            if (ThisStatementDeletion.IsChecked == true) { checkedOptions.Add("4"); }
+            if (MathOperatorsMutator.IsChecked == true) { checkedOptions.Add("4"); }
 
             return checkedOptions;
         }

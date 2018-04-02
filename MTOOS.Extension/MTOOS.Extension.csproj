@@ -71,11 +71,10 @@
     <Compile Include="MutationTestingManager.cs" />
     <Compile Include="Mutators\AssignmentExprMutator.cs" />
     <Compile Include="Mutators\ClassIdentifierMutator.cs" />
-    <Compile Include="Mutators\AdditiveAndMultiplicativeOp.cs" />
+    <Compile Include="Mutators\MathOperatorsMutator.cs" />
     <Compile Include="Mutators\BoundaryOpMutator.cs" />
     <Compile Include="Mutators\MutantCreator.cs" />
     <Compile Include="Mutators\RelationalAndEqualityOpMutator.cs" />
-    <Compile Include="Mutators\RelationalAndEqualityOp.cs" />
     <Compile Include="Mutators\RemoveNonBasicConditionalsMutator.cs" />
     <Compile Include="Mutators\ThisStatementDeletion.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
