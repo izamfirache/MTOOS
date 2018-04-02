@@ -12,50 +12,34 @@ namespace MTOOS.Extension.Mutators
 {
     public class AssignmentExprMutator : CSharpSyntaxRewriter
     {
-        private SyntaxNode _namespaceRootNode;
+        private SyntaxNode _classRootNode;
         private MutantCreator _mutantCreator;
         private SemanticModel _semanticModel;
 
-        public AssignmentExprMutator(SyntaxNode namespaceRootNode, MutantCreator mutantCreator,
+        public AssignmentExprMutator(SyntaxNode classRootNode, MutantCreator mutantCreator,
             SemanticModel semanticModel)
         {
-            _namespaceRootNode = namespaceRootNode;
+            _classRootNode = classRootNode;
             _mutantCreator = mutantCreator;
             _semanticModel = semanticModel;
         }
 
-        public override SyntaxNode VisitVariableDeclaration(VariableDeclarationSyntax node)
+        public override SyntaxNode VisitAssignmentExpression(AssignmentExpressionSyntax node)
         {
-            var variableType = node.Type;
-            var variables = node.Variables;
-
-            var symbolInfo = _semanticModel.GetSymbolInfo(node.Type);
-            var typeSymbol = symbolInfo.Symbol.ToString();
-
-            var replaceValueSyntaxNode = ResolveExpressionType(typeSymbol);
-
+            var nodeSemanticModel = _semanticModel.Compilation.GetSemanticModel(node.SyntaxTree);
+            var typeInfo = nodeSemanticModel.GetTypeInfo(node);
+            var replaceValueSyntaxNode = ResolveExpressionType(typeInfo.Type.Name.ToLower());
+                
             if (replaceValueSyntaxNode != null)
             {
-                // if not empty take the first one ??
-                VariableDeclaratorSyntax variableDeclaratorSyntax = variables.First();
-                var variableName = variableDeclaratorSyntax.Identifier.Value.ToString();
-                var variableAssignmentStatement = variableDeclaratorSyntax.Initializer;
+                var newAssignmentNode =
+                    SyntaxFactory.AssignmentExpression(
+                        node.Kind(),
+                        node.Left,
+                        replaceValueSyntaxNode).NormalizeWhitespace();
 
-                var variableDeclarationWithoutAssignmentNode = SyntaxFactory.VariableDeclaration(variableType)
-                            .AddVariables(SyntaxFactory.VariableDeclarator(
-                        SyntaxFactory.Identifier(variableName))
-                        .WithTrailingTrivia(SyntaxFactory.Space)
-                    .WithInitializer(
-                        SyntaxFactory.EqualsValueClause(replaceValueSyntaxNode
-                            .WithLeadingTrivia(SyntaxFactory.Space))));
-
-                var mutatedNamespaceRoot = _namespaceRootNode.ReplaceNode(node, variableDeclarationWithoutAssignmentNode);
-                _mutantCreator.CreateNewMutant(mutatedNamespaceRoot, false);
-            }
-            else
-            {
-                //variable declaration without assignment statement -- nothing to mutate
-                return node;
+                var mutatedClassRoot = _classRootNode.ReplaceNode(node, newAssignmentNode);
+                _mutantCreator.CreateNewMutant(mutatedClassRoot, false);
             }
 
             return node;
@@ -63,14 +47,28 @@ namespace MTOOS.Extension.Mutators
 
         private ExpressionSyntax ResolveExpressionType(string typeSymbol)
         {
-            if(typeSymbol == "int")
+            if(typeSymbol == "int32")
             {
                 return SyntaxFactory.LiteralExpression(
                     SyntaxKind.NumericLiteralExpression,
                     SyntaxFactory.Literal(GetRandomInt()));
             }
 
-            if(typeSymbol == "string")
+            if (typeSymbol == "double")
+            {
+                return SyntaxFactory.LiteralExpression(
+                    SyntaxKind.NumericLiteralExpression,
+                    SyntaxFactory.Literal(GetRandomDouble()));
+            }
+
+            if (typeSymbol == "float")
+            {
+                return SyntaxFactory.LiteralExpression(
+                    SyntaxKind.NumericLiteralExpression,
+                    SyntaxFactory.Literal(GetRandomFloat()));
+            }
+
+            if (typeSymbol == "string")
             {
                 return SyntaxFactory.LiteralExpression(
                     SyntaxKind.StringLiteralExpression,
@@ -85,6 +83,33 @@ namespace MTOOS.Extension.Mutators
             }
 
             return null;
+        }
+
+        private long GetRandomLong()
+        {
+            long min = 10000000000001;
+            long max = 99999999999999;
+            Random random = new Random();
+            long randomNumber = min + random.Next() % (max - min);
+
+            return randomNumber;
+        }
+
+        private float GetRandomFloat()
+        {
+            Random rnd = new Random();
+            double sample = rnd.NextDouble();
+            double range = float.MaxValue - float.MinValue;
+            double scaled = (sample * range) + float.MinValue;
+            float floatNumber = (float)scaled;
+
+            return floatNumber;
+        }
+
+        private double GetRandomDouble()
+        {
+            Random rnd = new Random();
+            return rnd.NextDouble();
         }
 
         private int GetRandomInt()

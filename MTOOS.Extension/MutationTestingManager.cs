@@ -47,7 +47,8 @@ namespace MTOOS.Extension
             //}
 
             stopwatch.Stop();
-            MessageBox.Show("Done. Execution time: " + stopwatch.ElapsedMilliseconds.ToString() + " ms.");
+            MessageBox.Show(string.Format("Done. Execution time: {0} ms. {1} mutants generated.",
+                stopwatch.ElapsedMilliseconds.ToString(), sourceprojectMutationResult.GeneratedMutants.Count));
 
             //return liveMutants;
 
