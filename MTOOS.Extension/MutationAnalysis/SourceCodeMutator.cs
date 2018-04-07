@@ -179,6 +179,17 @@ namespace MTOOS.Extension.MutationAnalysis
                             mathOperatorMutator.Visit(classSyntaxNode);
                         }
 
+                        //mutate assignment expressions
+                        if (options.Contains("5"))
+                        {
+                            //replace an assignment expression right part with the
+                            //default value for the desired type
+                            mutantCreator.MutatorType = "AEM";
+                            var mathOperatorMutator = new AssignmentExprMutator
+                                (classSyntaxNode, mutantCreator, projectSemanticModel);
+                            mathOperatorMutator.Visit(classSyntaxNode);
+                        }
+
                         //if (options.Contains("1"))
                         //{
                         //    //apply additive and multiplicative mutations

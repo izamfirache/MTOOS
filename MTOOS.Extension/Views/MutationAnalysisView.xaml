@@ -65,5 +65,10 @@
             Content="Math Operators Mutator - MOM" 
             HorizontalAlignment="Left" Margin="0,184,0,0" 
             VerticalAlignment="Top" Grid.ColumnSpan="4" Width="285"/>
+        <CheckBox 
+            x:Name="AssignmentExprMutator" 
+            Content="Assignment Expressions Mutator - AEM" 
+            HorizontalAlignment="Left" Margin="0,204,0,0" 
+            VerticalAlignment="Top" Grid.ColumnSpan="4" Width="285"/>
     </Grid>
 </UserControl>
