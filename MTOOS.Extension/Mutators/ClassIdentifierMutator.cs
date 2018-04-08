@@ -17,7 +17,9 @@ namespace MTOOS.Extension.Mutators
             _className = className;
             _mutatedClassName = mutatedClassName;
         }
-        public override SyntaxToken VisitToken(SyntaxToken token)
+
+        // TODO: change to VisitIdentifier if exists
+        public override SyntaxToken VisitToken(SyntaxToken token)  
         {
             if (token.IsKind(SyntaxKind.IdentifierToken))
             {

@@ -19,12 +19,12 @@
         </Grid.ColumnDefinitions>
         <Button Content="Start a new Mutation Testing session" HorizontalAlignment="Left" Margin="35.6,370,0,0" VerticalAlignment="Top" Width="259" RenderTransformOrigin="0.509,2.213" Height="40" Grid.Column="4" Click="StartMutationTesting"/>
         <Label Content="Mutation Testing for Object Oriented Software - MTOOS" HorizontalAlignment="Left" Margin="10,10,0,0" VerticalAlignment="Top" Width="523" Grid.ColumnSpan="5" FontSize="20"/>
-        <CheckBox x:Name="BoundaryOpMutator" Content="Boundary Operator Mutator - BOM" HorizontalAlignment="Left" Margin="0,124,0,0" VerticalAlignment="Top" Grid.ColumnSpan="4" Width="267"/>
+        <CheckBox x:Name="BoundaryOpMutator" Content="1. Boundary Operator Mutator - BOM" HorizontalAlignment="Left" Margin="0,124,0,0" VerticalAlignment="Top" Grid.ColumnSpan="4" Width="267"/>
         <Label Content="Choose the mutations you want to perform:" HorizontalAlignment="Left" Margin="21,85,0,0" VerticalAlignment="Top" RenderTransformOrigin="0.362,-0.028" Grid.ColumnSpan="5" Width="295" Height="29"/>
         <CheckBox x:Name="RelationalAndEqualityOpMutator" 
-                  Content="Relational and Equality Operator Mutator - REOM" HorizontalAlignment="Left" Margin="0,144,0,0" VerticalAlignment="Top" Grid.ColumnSpan="5" Width="285"/>
+                  Content="2. Relational and Equality Operator Mutator - REOM" HorizontalAlignment="Left" Margin="0,144,0,0" VerticalAlignment="Top" Grid.ColumnSpan="5" Width="316"/>
         <CheckBox x:Name="RemoveNonBasicConditionalsMutator" 
-                  Content="Replace Non Basic Conditions Mutator - RNBCM" HorizontalAlignment="Left" Margin="0,164,0,0" VerticalAlignment="Top" Grid.ColumnSpan="5" Width="285"/>
+                  Content="3. Replace Non Basic Conditions Mutator - RNBCM" HorizontalAlignment="Left" Margin="0,164,0,0" VerticalAlignment="Top" Grid.ColumnSpan="5" Width="316"/>
         <ListView 
             x:Name="MutantList"
             Grid.Column="4" 
@@ -41,7 +41,7 @@
         </ListView>
         <ListView x:Name="solutionProjectList" 
                           HorizontalAlignment="Left" 
-                          Height="172" Margin="3,288,0,0" 
+                          Height="172" Margin="0,309,0,0" 
                           VerticalAlignment="Top" Width="233" 
                           Grid.ColumnSpan="3">
             <ListView.View>
@@ -59,16 +59,31 @@
                 </GridView>
             </ListView.View>
         </ListView>
-        <Label Content="Select a project and a unit test project" HorizontalAlignment="Left" VerticalAlignment="Top" Margin="0,262,0,0" Grid.ColumnSpan="5" Width="331"/>
+        <Label Content="Select a project and a unit test project" HorizontalAlignment="Left" VerticalAlignment="Top" Margin="0,283,0,0" Grid.ColumnSpan="5" Width="331"/>
         <CheckBox 
             x:Name="MathOperatorsMutator" 
-            Content="Math Operators Mutator - MOM" 
+            Content="4. Math Operators Mutator - MOM" 
             HorizontalAlignment="Left" Margin="0,184,0,0" 
             VerticalAlignment="Top" Grid.ColumnSpan="4" Width="285"/>
         <CheckBox 
             x:Name="AssignmentExprMutator" 
-            Content="Assignment Expressions Mutator - AEM" 
+            Content="5. Assignment Expressions Mutator - AEM" 
             HorizontalAlignment="Left" Margin="0,204,0,0" 
+            VerticalAlignment="Top" Grid.ColumnSpan="4" Width="285"/>
+        <CheckBox 
+            x:Name="ReturnExpressionMutator" 
+            Content="6. Return Expression Mutator - REM" 
+            HorizontalAlignment="Left" Margin="0,224,0,0" 
+            VerticalAlignment="Top" Grid.ColumnSpan="4" Width="285"/>
+        <CheckBox 
+            x:Name="VoidMethodCallMutator" 
+            Content="7. Void Method Call Mutator - VMCM" 
+            HorizontalAlignment="Left" Margin="0,244,0,0" 
+            VerticalAlignment="Top" Grid.ColumnSpan="4" Width="285"/>
+        <CheckBox 
+            x:Name="ClassMemberAssignDel" 
+            Content="8. Class Member Assignment Deletion - CMAD" 
+            HorizontalAlignment="Left" Margin="0,263,0,0" 
             VerticalAlignment="Top" Grid.ColumnSpan="4" Width="285"/>
     </Grid>
 </UserControl>

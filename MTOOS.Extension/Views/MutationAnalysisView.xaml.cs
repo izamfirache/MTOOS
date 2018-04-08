@@ -141,7 +141,10 @@ namespace MTOOS.Extension.Views
             if (RemoveNonBasicConditionalsMutator.IsChecked == true) { checkedOptions.Add("3"); }
             if (MathOperatorsMutator.IsChecked == true) { checkedOptions.Add("4"); }
             if (AssignmentExprMutator.IsChecked == true) { checkedOptions.Add("5"); }
-            
+            if (ReturnExpressionMutator.IsChecked == true) { checkedOptions.Add("6"); }
+            if (VoidMethodCallMutator.IsChecked == true) { checkedOptions.Add("7"); }
+            if (ClassMemberAssignDel.IsChecked == true) { checkedOptions.Add("8"); }
+
             return checkedOptions;
         }
     }

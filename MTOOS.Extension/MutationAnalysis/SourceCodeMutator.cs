@@ -146,18 +146,18 @@ namespace MTOOS.Extension.MutationAnalysis
                         if (options.Contains("1"))
                         {
                             mutantCreator.MutatorType = "BOM";
-                            var mathOperatorMutator = new BoundaryOpMutator
+                            var boundaryOpMutator = new BoundaryOpMutator
                                 (classSyntaxNode, mutantCreator);
-                            mathOperatorMutator.Visit(classSyntaxNode);
+                            boundaryOpMutator.Visit(classSyntaxNode);
                         }
 
                         //nagate relational and equality operators
                         if (options.Contains("2"))
                         {
                             mutantCreator.MutatorType = "REOM";
-                            var mathOperatorMutator = new RelationalAndEqualityOpMutator
+                            var relationalAndEqOpMutator = new RelationalAndEqualityOpMutator
                                 (classSyntaxNode, mutantCreator);
-                            mathOperatorMutator.Visit(classSyntaxNode);
+                            relationalAndEqOpMutator.Visit(classSyntaxNode);
                         }
 
                         //mutate non basic conditionals
@@ -165,9 +165,9 @@ namespace MTOOS.Extension.MutationAnalysis
                         {
                             //replace complex boolean expressions with true or false
                             mutantCreator.MutatorType = "RNBCM";
-                            var mathOperatorMutator = new RemoveNonBasicConditionalsMutator
+                            var conditionaleMutator = new RemoveNonBasicConditionalsMutator
                                 (classSyntaxNode, mutantCreator);
-                            mathOperatorMutator.Visit(classSyntaxNode);
+                            conditionaleMutator.Visit(classSyntaxNode);
                         }
 
                         //mutate math operators
@@ -185,52 +185,49 @@ namespace MTOOS.Extension.MutationAnalysis
                             //replace an assignment expression right part with the
                             //default value for the desired type
                             mutantCreator.MutatorType = "AEM";
-                            var mathOperatorMutator = new AssignmentExprMutator
+                            var assignmentExprMutator = new AssignmentExprMutator
                                 (classSyntaxNode, mutantCreator, projectSemanticModel);
-                            mathOperatorMutator.Visit(classSyntaxNode);
+                            assignmentExprMutator.Visit(classSyntaxNode);
                         }
 
-                        //if (options.Contains("1"))
-                        //{
-                        //    //apply additive and multiplicative mutations
-                        //    var mathOperatorMutator = new AdditiveAndMultiplicativeOp
-                        //        (classSyntaxNode, mutantCreator);
-                        //    mathOperatorMutator.Visit(classSyntaxNode);
-                        //}
+                        //mutate return statements
+                        if (options.Contains("6"))
+                        {
+                            //replace an return statement 
+                            //value with a random gen value for that type
+                            mutantCreator.MutatorType = "REM";
+                            var returnStatementMutator = new ReturnExpressionMutator
+                                (classSyntaxNode, mutantCreator, projectSemanticModel);
+                            returnStatementMutator.Visit(classSyntaxNode);
+                        }
 
-                        //if (options.Contains("2"))
-                        //{
-                        //    //apply assignment expression mutation
-                        //    var assignmentExprMutator = new AssignmentExprMutator
-                        //    (classSyntaxNode, mutantCreator, projectSemanticModel);
-                        //    assignmentExprMutator.Visit(classSyntaxNode);
-                        //}
+                        //mutate void method calls
+                        if (options.Contains("7"))
+                        {
+                            //remove void mthod calls statements
+                            mutantCreator.MutatorType = "VMCM";
+                            var voidMethodCallMutator = new VoidMethodCallMutator
+                                (classSyntaxNode, mutantCreator, projectSemanticModel);
+                            voidMethodCallMutator.Visit(classSyntaxNode);
+                        }
 
-                        //if (options.Contains("3"))
-                        //{
-                        //    //apply realtional and equity mutations
-                        //    var relationalAndEquityOp = new RelationalAndEqualityOp
-                        //    (classSyntaxNode, mutantCreator);
-                        //    relationalAndEquityOp.Visit(classSyntaxNode);
-                        //}
+                        if (options.Contains("8"))
+                        {
+                            //deletes all class's members assignments (global variables assignments)
+                            var classFields = namespaceClasses.ElementAt(0)
+                            .DescendantNodes().OfType<FieldDeclarationSyntax>().ToList();
 
-                        //if (options.Contains("4"))
-                        //{
-                        //    //apply this keyword statement deletion muttion
-                        //    var classFields = namespaceClasses.ElementAt(0)
-                        //    .DescendantNodes().OfType<FieldDeclarationSyntax>().ToList();
+                            var classFieldsIdentifiers = new List<string>();
+                            foreach (FieldDeclarationSyntax field in classFields)
+                            {
+                                classFieldsIdentifiers.Add(
+                                    field.Declaration.Variables.First().Identifier.ToString());
+                            }
 
-                        //    var classFieldsIdentifiers = new List<string>();
-                        //    foreach (FieldDeclarationSyntax field in classFields)
-                        //    {
-                        //        classFieldsIdentifiers.Add(
-                        //            field.Declaration.Variables.First().Identifier.ToString());
-                        //    }
-
-                        //    var thisKeywordStatementDeletion = new ThisStatementDeletion
-                        //        (classSyntaxNode, mutantCreator, classFieldsIdentifiers);
-                        //    thisKeywordStatementDeletion.Visit(classSyntaxNode);
-                        //}
+                            var classMembersAssignmentsDeletion = new ClassMemberAssignDel
+                                (classSyntaxNode, mutantCreator, classFieldsIdentifiers);
+                            classMembersAssignmentsDeletion.Visit(classSyntaxNode);
+                        }
 
                         generatedMutants.AddRange(mutantCreator.GetMutatedClasses());
                     }
