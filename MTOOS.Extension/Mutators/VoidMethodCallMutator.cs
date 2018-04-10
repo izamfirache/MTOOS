@@ -19,16 +19,18 @@ namespace MTOOS.Extension.Mutators
             _semanticModel = semanticModel;
         }
 
-        public override SyntaxNode VisitAssignmentExpression(AssignmentExpressionSyntax node)//???
+        public override SyntaxNode VisitInvocationExpression(InvocationExpressionSyntax node)
         {
             var nodeSemanticModel = _semanticModel.Compilation.GetSemanticModel(node.SyntaxTree);
             var typeInfo = nodeSemanticModel.GetTypeInfo(node);
 
             if (typeInfo.Type.Name.ToLower() == "void")
             {
+                //get the parent node -- usually an ExpressionStatement node
+                var voidInvocationParentNode = node.Parent;
                 var mutatedClassRoot = 
-                    _classRootNode.RemoveNode(node, SyntaxRemoveOptions.KeepNoTrivia);
-                _mutantCreator.CreateNewMutant(mutatedClassRoot, false);
+                    _classRootNode.RemoveNode(voidInvocationParentNode, SyntaxRemoveOptions.KeepNoTrivia);
+                _mutantCreator.CreateNewMutant(mutatedClassRoot, true);
             }
 
             return node;

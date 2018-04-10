@@ -62,7 +62,7 @@ namespace MTOOS.Extension.Mutators
 
             if (isRemovableNode)
             {
-                var mutatedNamespaceRoot = _classRootNode.RemoveNode(node,
+                var mutatedNamespaceRoot = _classRootNode.RemoveNode(node.Parent,
                         SyntaxRemoveOptions.KeepLeadingTrivia |
                         SyntaxRemoveOptions.KeepTrailingTrivia);
                 _mutantCreator.CreateNewMutant(mutatedNamespaceRoot, true);

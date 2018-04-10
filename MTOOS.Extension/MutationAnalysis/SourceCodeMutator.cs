@@ -163,9 +163,10 @@ namespace MTOOS.Extension.MutationAnalysis
                             voidMethodCallMutator.Visit(classSyntaxNode);
                         }
 
-                        if (options.Contains("8"))
+                        if (options.Contains("8") && !options.Contains("5"))
                         {
                             //deletes all class's members assignments (global variables assignments)
+                            mutantCreator.MutatorType = "CMAD";
                             var classFields = namespaceClasses.ElementAt(0)
                             .DescendantNodes().OfType<FieldDeclarationSyntax>().ToList();
 
