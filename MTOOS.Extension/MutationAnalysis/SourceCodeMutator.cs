@@ -146,7 +146,7 @@ namespace MTOOS.Extension.MutationAnalysis
                         if (options.Contains("6"))
                         {
                             //replace an return statement 
-                            //value with a random gen value for that type
+                            //value with a random generated value for that type
                             mutantCreator.MutatorType = "REM";
                             var returnStatementMutator = new ReturnExpressionMutator
                                 (classSyntaxNode, mutantCreator, projectSemanticModel, projectClasses);

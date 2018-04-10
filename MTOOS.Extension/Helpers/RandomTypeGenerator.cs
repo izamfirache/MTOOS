@@ -63,6 +63,10 @@ namespace MTOOS.Extension.Helpers
                     return GetRandomInt() % 2 == 0 ?
                         SyntaxFactory.LiteralExpression(SyntaxKind.TrueLiteralExpression) :
                         SyntaxFactory.LiteralExpression(SyntaxKind.FalseLiteralExpression);
+                case "boolean":
+                    return GetRandomInt() % 2 == 0 ?
+                        SyntaxFactory.LiteralExpression(SyntaxKind.TrueLiteralExpression) :
+                        SyntaxFactory.LiteralExpression(SyntaxKind.FalseLiteralExpression);
             }
 
             return null;
@@ -150,7 +154,7 @@ namespace MTOOS.Extension.Helpers
             var builder = new StringBuilder();
             Random rnd = new Random();
 
-            for (var i = 0; i < rnd.Next(15, 20); i++)
+            for (var i = 0; i < rnd.Next(5, 10); i++)
             {
                 var c = pool[rnd.Next(0, pool.Length)];
                 builder.Append(c);
@@ -165,7 +169,8 @@ namespace MTOOS.Extension.Helpers
                 || typeName == "double"
                 || typeName == "float"
                 || typeName == "string"
-                || typeName == "bool")
+                || typeName == "bool"
+                || typeName == "boolean")
                 return true;
 
             return false;

@@ -26,31 +26,15 @@ namespace MTOOS.Extension.Mutators
         public override SyntaxNode VisitReturnStatement(ReturnStatementSyntax node)
         {
             var nodeSemanticModel = _semanticModel.Compilation.GetSemanticModel(node.SyntaxTree);
-            var typeInfo = nodeSemanticModel.GetTypeInfo(node);
+            var typeInfo = nodeSemanticModel.GetTypeInfo(node.Expression);
             var randomValueSyntaxNode =
-                _randomTypeGenerator.ResolveType(typeInfo.Type.Name.ToLower());
-
-            //TODO: also replace the return value with an empty value for that type
-            //0 for numbers, '' for string, empty lists, empty arrays.
+                _randomTypeGenerator.ResolveType(typeInfo.Type.Name);
 
             //replace with random value
             if (randomValueSyntaxNode != null)
             {
                 var newReturnStatemenNode =
                     SyntaxFactory.ReturnStatement(randomValueSyntaxNode)
-                        .NormalizeWhitespace();
-
-                var mutatedClassRoot = _classRootNode.ReplaceNode(node, newReturnStatemenNode);
-                _mutantCreator.CreateNewMutant(mutatedClassRoot, false);
-            }
-
-            //replace with empty value
-            var emptyValueSyntaxNode =
-                _randomTypeGenerator.GetEmptyValueForType(typeInfo.Type.Name.ToLower());
-            if (emptyValueSyntaxNode != null)
-            {
-                var newReturnStatemenNode =
-                    SyntaxFactory.ReturnStatement(emptyValueSyntaxNode)
                         .NormalizeWhitespace();
 
                 var mutatedClassRoot = _classRootNode.ReplaceNode(node, newReturnStatemenNode);
