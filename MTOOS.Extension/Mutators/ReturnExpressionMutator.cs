@@ -2,6 +2,8 @@
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 using MTOOS.Extension.Helpers;
+using System.Collections.Generic;
+using MTOOS.Extension.Models;
 
 namespace MTOOS.Extension.Mutators
 {
@@ -13,12 +15,12 @@ namespace MTOOS.Extension.Mutators
         private RandomTypeGenerator _randomTypeGenerator;
 
         public ReturnExpressionMutator(SyntaxNode classRootNode, MutantCreator mutantCreator,
-            SemanticModel semanticModel)
+            SemanticModel semanticModel, List<Class> projectClasses)
         {
             _classRootNode = classRootNode;
             _mutantCreator = mutantCreator;
             _semanticModel = semanticModel;
-            _randomTypeGenerator = new RandomTypeGenerator();
+            _randomTypeGenerator = new RandomTypeGenerator(projectClasses);
         }
 
         public override SyntaxNode VisitReturnStatement(ReturnStatementSyntax node)
@@ -26,7 +28,7 @@ namespace MTOOS.Extension.Mutators
             var nodeSemanticModel = _semanticModel.Compilation.GetSemanticModel(node.SyntaxTree);
             var typeInfo = nodeSemanticModel.GetTypeInfo(node);
             var randomValueSyntaxNode =
-                _randomTypeGenerator.ResolveExpressionType(typeInfo.Type.Name.ToLower());
+                _randomTypeGenerator.ResolveType(typeInfo.Type.Name.ToLower());
 
             //TODO: also replace the return value with an empty value for that type
             //0 for numbers, '' for string, empty lists, empty arrays.

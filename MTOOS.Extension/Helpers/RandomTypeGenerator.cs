@@ -1,5 +1,7 @@
-﻿using Microsoft.CodeAnalysis.CSharp;
+﻿using Microsoft.CodeAnalysis;
+using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
+using MTOOS.Extension.Models;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -10,92 +12,101 @@ namespace MTOOS.Extension.Helpers
 {
     public class RandomTypeGenerator
     {
-        public  ExpressionSyntax ResolveExpressionType(string typeSymbol)
+        private RoslynSetupHelper _roslynHelper;
+        private List<Class> _projectClasses;
+
+        public RandomTypeGenerator(List<Class> projectClasses)
         {
-            if (typeSymbol == "int32")
-            {
-                return SyntaxFactory.LiteralExpression(
-                    SyntaxKind.NumericLiteralExpression,
-                    SyntaxFactory.Literal(GetRandomInt()));
-            }
+            _roslynHelper = new RoslynSetupHelper();
+            _projectClasses = projectClasses;
+        }
 
-            if (typeSymbol == "double")
+        public ExpressionSyntax ResolveType(string typeName)
+        {
+            if (IsPrimitiveType(typeName.ToLower()))
             {
-                return SyntaxFactory.LiteralExpression(
-                    SyntaxKind.NumericLiteralExpression,
-                    SyntaxFactory.Literal(GetRandomDouble()));
+                var primitiveType = ResolvePrimitiveType(typeName.ToLower());
+                return primitiveType ?? null;
             }
+            else
+            {
+                var customType = ResolveCustomType(typeName);
+                return customType ?? null;
+            }
+        }
 
-            if (typeSymbol == "float")
+        public ExpressionSyntax ResolvePrimitiveType(string typeSymbol)
+        {
+            switch (typeSymbol)
             {
-                return SyntaxFactory.LiteralExpression(
-                    SyntaxKind.NumericLiteralExpression,
-                    SyntaxFactory.Literal(GetRandomFloat()));
+                case "int32":
+                    return SyntaxFactory.LiteralExpression(
+                        SyntaxKind.NumericLiteralExpression,
+                        SyntaxFactory.Literal(GetRandomInt()));
+                case "int":
+                    return SyntaxFactory.LiteralExpression(
+                        SyntaxKind.NumericLiteralExpression,
+                        SyntaxFactory.Literal(GetRandomInt()));
+                case "double":
+                    return SyntaxFactory.LiteralExpression(
+                        SyntaxKind.NumericLiteralExpression,
+                        SyntaxFactory.Literal(GetRandomDouble()));
+                case "float":
+                    return SyntaxFactory.LiteralExpression(
+                        SyntaxKind.NumericLiteralExpression,
+                        SyntaxFactory.Literal(GetRandomFloat()));
+                case "string":
+                    return SyntaxFactory.LiteralExpression(
+                        SyntaxKind.StringLiteralExpression,
+                        SyntaxFactory.Literal(GetRandomString()));
+                case "bool":
+                    return GetRandomInt() % 2 == 0 ?
+                        SyntaxFactory.LiteralExpression(SyntaxKind.TrueLiteralExpression) :
+                        SyntaxFactory.LiteralExpression(SyntaxKind.FalseLiteralExpression);
             }
-
-            if (typeSymbol == "string")
-            {
-                return SyntaxFactory.LiteralExpression(
-                    SyntaxKind.StringLiteralExpression,
-                    SyntaxFactory.Literal(GetRandomString()));
-            }
-
-            if (typeSymbol == "bool")
-            {
-                return GetRandomInt() % 2 == 0 ?
-                    SyntaxFactory.LiteralExpression(SyntaxKind.TrueLiteralExpression) :
-                    SyntaxFactory.LiteralExpression(SyntaxKind.FalseLiteralExpression);
-            }
-
-            if (typeSymbol == "custom")
-            {
-                // TODO: add support for custom types using Roslyn if possible
-                // Reflection otherwise
-            }
-            
-            // TODO: think of another possible non-custom types
 
             return null;
         }
 
-        public ExpressionSyntax GetEmptyValueForType(string typeSymbol)
+        private ObjectCreationExpressionSyntax ResolveCustomType(string typeName)
         {
-            if (typeSymbol == "int32")
+            if (_projectClasses.Any(c => c.Name == typeName))
             {
-                return SyntaxFactory.LiteralExpression(
-                    SyntaxKind.NumericLiteralExpression,
-                    SyntaxFactory.Literal(0));
-            }
+                var classInfo =
+                    _projectClasses.Where(c => c.Name == typeName).FirstOrDefault();
+                
+                var ctorParameters = 
+                    new SyntaxNodeOrToken[classInfo.Constructor.Parameters.Count 
+                        + classInfo.Constructor.Parameters.Count - 1]; // includes commas
+                int position = 0;
+                foreach(MethodParameter param in classInfo.Constructor.Parameters)
+                {
+                    if (IsPrimitiveType(param.Type.ToLower()))
+                    {
+                        ctorParameters[position] = 
+                            SyntaxFactory.Argument(ResolvePrimitiveType(param.Type.ToLower()));
+                    }
+                    else
+                    {
+                        ctorParameters[position] =
+                            SyntaxFactory.Argument(ResolveCustomType(param.Type));
+                    }
 
-            if (typeSymbol == "double")
-            {
-                return SyntaxFactory.LiteralExpression(
-                    SyntaxKind.NumericLiteralExpression,
-                    SyntaxFactory.Literal(0));
-            }
+                    if(position != classInfo.Constructor.Parameters.Count) //not last ctor param
+                    {
+                        ctorParameters[position + 1] =
+                            SyntaxFactory.Token(SyntaxKind.CommaToken);
+                    }
 
-            if (typeSymbol == "float")
-            {
-                return SyntaxFactory.LiteralExpression(
-                    SyntaxKind.NumericLiteralExpression,
-                    SyntaxFactory.Literal(0));
-            }
+                    position = position + 2;
+                }
 
-            if (typeSymbol == "string")
-            {
-                return SyntaxFactory.LiteralExpression(
-                    SyntaxKind.StringLiteralExpression,
-                    SyntaxFactory.Literal(""));
-            }
-
-            if(typeSymbol == "ienumerable")
-            {
-                return SyntaxFactory.LiteralExpression(
-                    SyntaxKind.StringLiteralExpression,
-                    SyntaxFactory.Literal("")); //TODO: create an empty List/Array
-            }
-
-            // TODO: think of another possible non-custom types
+                return SyntaxFactory.ObjectCreationExpression(
+                        SyntaxFactory.IdentifierName(typeName))
+                            .WithArgumentList(
+                                SyntaxFactory.ArgumentList(
+                                    SyntaxFactory.SeparatedList<ArgumentSyntax>(ctorParameters)));
+                }
 
             return null;
         }
@@ -135,7 +146,7 @@ namespace MTOOS.Extension.Helpers
 
         private string GetRandomString()
         {
-            const string pool = "abcdefghijklmnopqrstuvwxyz0123456789!?@#$%^&*()[]{}";
+            const string pool = "abcdefghijklmnopqrstuvwxyz0123456789";
             var builder = new StringBuilder();
             Random rnd = new Random();
 
@@ -145,6 +156,19 @@ namespace MTOOS.Extension.Helpers
                 builder.Append(c);
             }
             return builder.ToString();
+        }
+
+        private bool IsPrimitiveType(string typeName)
+        {
+            if (typeName == "int32"
+                || typeName == "int"
+                || typeName == "double"
+                || typeName == "float"
+                || typeName == "string"
+                || typeName == "bool")
+                return true;
+
+            return false;
         }
     }
 }

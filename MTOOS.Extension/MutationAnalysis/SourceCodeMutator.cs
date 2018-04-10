@@ -45,11 +45,19 @@ namespace MTOOS.Extension.MutationAnalysis
             var projectAssembly = _roslynSetupHelper.GetProjectAssembly(projectToAnalyze);
             var projectSemanticModel = _roslynSetupHelper.GetProjectSemanticModel(
                 _roslynSetupHelper.GetProjectToAnalyze(solution, sourceCodeProject.Name));
-            
-            var generatedMutants = 
-                GenerateMutantsForProject(projectAssembly, projectSemanticModel, options, workspace);
 
-            //Compilation finalCompilation = GetMutatedCompilation(generatedMutants, sourceCodeProject);
+            //get info about source code project's types
+            var projectClasses = new List<Class>();
+            foreach (var syntaxTree in projectAssembly.SyntaxTrees)
+            {
+                var classVisitor = new ClassVisitor();
+                classVisitor.Visit(syntaxTree.GetRoot());
+                projectClasses.AddRange(classVisitor.ProjectClasses);
+            }
+
+            var generatedMutants = 
+                GenerateMutantsForProject(projectAssembly, projectSemanticModel, 
+                    options, workspace, projectClasses);
             
             return new SourceCodeMutationResult()
             {
@@ -58,68 +66,12 @@ namespace MTOOS.Extension.MutationAnalysis
             };
         }
 
-        //private Compilation GetMutatedCompilation(List<GeneratedMutant> generatedMutants,
-        //    EnvDTE.Project sourceCodeProject)
-        //{
-        //    List<MetadataReference> metadataReferences = new List<MetadataReference>();
-        //    var options = new CSharpCompilationOptions(
-        //                OutputKind.DynamicallyLinkedLibrary,
-        //                optimizationLevel: OptimizationLevel.Debug,
-        //                allowUnsafe: true);
-
-        //    var _references = new List<MetadataReference>()
-        //    { 
-        //        MetadataReference.CreateFromFile(typeof(System.Reflection.Binder).GetTypeInfo().Assembly.Location)
-        //    };
-        //    var sourceCodeRefereces = _envDteHelper.GetEnvDteProjectReferences(sourceCodeProject);
-        //    foreach (string referencePath in sourceCodeRefereces)
-        //    {
-        //        _references.Add(MetadataReference.CreateFromFile(referencePath));
-        //    }
-
-        //    var compilationUnit = SyntaxFactory.CompilationUnit().WithMembers(
-        //        SyntaxFactory.SingletonList<MemberDeclarationSyntax>(
-        //            SyntaxFactory.NamespaceDeclaration(
-        //                SyntaxFactory.IdentifierName("MutatedClasses"))
-        //                .WithMembers(
-        //    SyntaxFactory.SingletonList<MemberDeclarationSyntax>(
-        //        SyntaxFactory.ClassDeclaration("FirstTestMutant")
-        //        .WithModifiers(
-        //            SyntaxFactory.TokenList(
-        //                SyntaxFactory.Token(SyntaxKind.PublicKeyword)))))))
-        //                    .NormalizeWhitespace();
-
-        //    var compilationUnitRoot = compilationUnit.SyntaxTree.GetRoot() as CompilationUnitSyntax;
-        //    var mutatedClassesNameSpace = 
-        //        compilationUnitRoot.DescendantNodes().OfType<NamespaceDeclarationSyntax>().First();
-        //    var firstTestMutant = 
-        //        mutatedClassesNameSpace.DescendantNodes().OfType<ClassDeclarationSyntax>().First();
-        //    var compilationUnitSyntaxTree = compilationUnitRoot
-        //        .InsertNodesAfter(firstTestMutant, generatedMutants.Select(p=>p.MutatedCodeRoot));
-
-        //    var compilation = CSharpCompilation.Create(
-        //        "MutatedSourceCodeProject",
-        //        options: options,
-        //        references: _references)
-        //        .AddSyntaxTrees(compilationUnitSyntaxTree.SyntaxTree);
-
-        //    var stream = new MemoryStream();
-        //    var emitResult = compilation.Emit(stream);
-
-        //    if (emitResult.Success)
-        //    {
-        //        return compilation;
-        //    }
-
-        //    throw new Exception("There was an error while trying to mutate the source code project." +
-        //        "Can not compile the generated mutants.");
-        //}
-
         private List<GeneratedMutant> GenerateMutantsForProject(
             Compilation projectAssembly,
             SemanticModel projectSemanticModel,
             List<string> options,
-            Workspace workspace)
+            Workspace workspace,
+            List<Class> projectClasses)
         {
             var generatedMutants = new List<GeneratedMutant>();
 
@@ -186,7 +138,7 @@ namespace MTOOS.Extension.MutationAnalysis
                             //default value for the desired type
                             mutantCreator.MutatorType = "AEM";
                             var assignmentExprMutator = new AssignmentExprMutator
-                                (classSyntaxNode, mutantCreator, projectSemanticModel);
+                                (classSyntaxNode, mutantCreator, projectSemanticModel, projectClasses);
                             assignmentExprMutator.Visit(classSyntaxNode);
                         }
 
@@ -197,7 +149,7 @@ namespace MTOOS.Extension.MutationAnalysis
                             //value with a random gen value for that type
                             mutantCreator.MutatorType = "REM";
                             var returnStatementMutator = new ReturnExpressionMutator
-                                (classSyntaxNode, mutantCreator, projectSemanticModel);
+                                (classSyntaxNode, mutantCreator, projectSemanticModel, projectClasses);
                             returnStatementMutator.Visit(classSyntaxNode);
                         }
 
