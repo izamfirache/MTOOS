@@ -7,8 +7,7 @@
              Background="{DynamicResource {x:Static SystemColors.ActiveCaptionBrushKey}}"
              Foreground="{DynamicResource {x:Static vsshell:VsBrushes.WindowTextKey}}"
              mc:Ignorable="d"
-             d:DesignHeight="550"
-             Name="MutationAnalysis" Width="774.4">
+             Name="MutationAnalysis" Width="774.4" Height="625.2">
     <Grid x:Name="grdMutationAnalysist"  Height="500" Margin="87,56,19.8,-5.6">
         <Grid.ColumnDefinitions>
             <ColumnDefinition Width="66*"/>
@@ -17,7 +16,7 @@
             <ColumnDefinition Width="40*"/>
             <ColumnDefinition Width="312*"/>
         </Grid.ColumnDefinitions>
-        <Button Content="Start a new Mutation Testing session" HorizontalAlignment="Left" Margin="35.6,370,0,0" VerticalAlignment="Top" Width="259" RenderTransformOrigin="0.509,2.213" Height="40" Grid.Column="4" Click="StartMutationTesting"/>
+        <Button Content="Start a new Mutation Testing session" HorizontalAlignment="Left" Margin="102.6,375,0,0" VerticalAlignment="Top" Width="259" RenderTransformOrigin="0.509,2.213" Height="40" Grid.Column="4" Click="StartMutationTesting"/>
         <Label Content="Mutation Testing for Object Oriented Software - MTOOS" HorizontalAlignment="Left" Margin="10,10,0,0" VerticalAlignment="Top" Width="523" Grid.ColumnSpan="5" FontSize="20"/>
         <CheckBox x:Name="BoundaryOpMutator" Content="1. Boundary Operator Mutator - BOM" HorizontalAlignment="Left" Margin="0,124,0,0" VerticalAlignment="Top" Grid.ColumnSpan="4" Width="267"/>
         <Label Content="Choose the mutations you want to perform:" HorizontalAlignment="Left" Margin="21,85,0,0" VerticalAlignment="Top" RenderTransformOrigin="0.362,-0.028" Grid.ColumnSpan="5" Width="295" Height="29"/>
@@ -29,7 +28,7 @@
             x:Name="MutantList"
             Grid.Column="4" 
             HorizontalAlignment="Left" 
-            Height="313" Margin="34.6,52,0,0" 
+            Height="313" Margin="102.6,57,0,0" 
             VerticalAlignment="Top" Width="260">
             <ListView.View>
                 <GridView>
@@ -41,7 +40,7 @@
         </ListView>
         <ListView x:Name="solutionProjectList" 
                           HorizontalAlignment="Left" 
-                          Height="172" Margin="0,309,0,0" 
+                          Height="172" Margin="0,348,0,-20" 
                           VerticalAlignment="Top" Width="233" 
                           Grid.ColumnSpan="3">
             <ListView.View>
@@ -59,7 +58,7 @@
                 </GridView>
             </ListView.View>
         </ListView>
-        <Label Content="Select a project and a unit test project" HorizontalAlignment="Left" VerticalAlignment="Top" Margin="0,283,0,0" Grid.ColumnSpan="5" Width="331"/>
+        <Label Content="Select a project and a unit test project" HorizontalAlignment="Left" VerticalAlignment="Top" Margin="-2,323,0,0" Grid.ColumnSpan="5" Width="331"/>
         <CheckBox 
             x:Name="MathOperatorsMutator" 
             Content="4. Math Operators Mutator - MOM" 
@@ -85,5 +84,10 @@
             Content="8. Class Member Assignment Deletion - CMAD" 
             HorizontalAlignment="Left" Margin="0,263,0,0" 
             VerticalAlignment="Top" Grid.ColumnSpan="4" Width="285"/>
+        <CheckBox 
+            x:Name="VariableDeclarationMutator" 
+            Content="9. Variable Declaration With Initalization Mutator - VDM" 
+            HorizontalAlignment="Left" Margin="0,283,0,0" 
+            VerticalAlignment="Top" Grid.ColumnSpan="5" Width="329"/>
     </Grid>
 </UserControl>

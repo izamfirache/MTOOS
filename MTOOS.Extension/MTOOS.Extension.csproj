@@ -83,6 +83,7 @@
     <Compile Include="Mutators\RemoveNonBasicConditionalsMutator.cs" />
     <Compile Include="Mutators\ReturnExpressionMutator.cs" />
     <Compile Include="Mutators\ClassMemberAssignDel.cs" />
+    <Compile Include="Mutators\VariableDeclarationMutator.cs" />
     <Compile Include="Mutators\VoidMethodCallMutator.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="MutationAnalysis\SourceCodeMutator.cs" />

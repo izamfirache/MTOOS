@@ -144,6 +144,7 @@ namespace MTOOS.Extension.Views
             if (ReturnExpressionMutator.IsChecked == true) { checkedOptions.Add("6"); }
             if (VoidMethodCallMutator.IsChecked == true) { checkedOptions.Add("7"); }
             if (ClassMemberAssignDel.IsChecked == true) { checkedOptions.Add("8"); }
+            if (VariableDeclarationMutator.IsChecked == true) { checkedOptions.Add("9"); }
 
             return checkedOptions;
         }

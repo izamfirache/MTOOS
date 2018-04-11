@@ -182,6 +182,15 @@ namespace MTOOS.Extension.MutationAnalysis
                             classMembersAssignmentsDeletion.Visit(classSyntaxNode);
                         }
 
+                        //mutate variable declaration with initialization statements
+                        if (options.Contains("9"))
+                        {
+                            mutantCreator.MutatorType = "VDM";
+                            var voidMethodCallMutator = new VariableDeclarationMutator
+                                (classSyntaxNode, mutantCreator, projectSemanticModel, projectClasses);
+                            voidMethodCallMutator.Visit(classSyntaxNode);
+                        }
+
                         generatedMutants.AddRange(mutantCreator.GetMutatedClasses());
                     }
                 }
