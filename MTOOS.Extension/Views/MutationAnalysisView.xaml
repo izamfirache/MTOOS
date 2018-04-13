@@ -86,8 +86,8 @@
             VerticalAlignment="Top" Grid.ColumnSpan="4" Width="285"/>
         <CheckBox 
             x:Name="VariableDeclarationMutator" 
-            Content="9. Variable Declaration With Initalization Mutator - VDM" 
+            Content="9. Local Variable Declaration With Initalization Mutator - LVDM" 
             HorizontalAlignment="Left" Margin="0,283,0,0" 
-            VerticalAlignment="Top" Grid.ColumnSpan="5" Width="329"/>
+            VerticalAlignment="Top" Grid.ColumnSpan="5" Width="363"/>
     </Grid>
 </UserControl>

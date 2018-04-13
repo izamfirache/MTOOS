@@ -74,10 +74,14 @@ namespace MTOOS.Extension.Helpers
 
         private ObjectCreationExpressionSyntax ResolveCustomType(string typeName)
         {
-            if (_projectClasses.Any(c => c.Name == typeName))
+            if ((_projectClasses.Any(c => typeName.Contains(string.Format(".{0}", c.Name))) 
+                && !typeName.Contains("List") && !typeName.Contains("Dictionary"))
+                || _projectClasses.Any(c => c.Name == typeName))
             {
                 var classInfo =
-                    _projectClasses.Where(c => c.Name == typeName).FirstOrDefault();
+                    _projectClasses.Where(
+                        c => typeName.Contains(string.Format(".{0}", c.Name))
+                        || c.Name == typeName).FirstOrDefault();
                 
                 var ctorParameters = 
                     new SyntaxNodeOrToken[classInfo.Constructor.Parameters.Count 
@@ -110,9 +114,25 @@ namespace MTOOS.Extension.Helpers
                             .WithArgumentList(
                                 SyntaxFactory.ArgumentList(
                                     SyntaxFactory.SeparatedList<ArgumentSyntax>(ctorParameters)));
+            }
+            else
+            {
+                //an array -- int[], string[] --  (TODO: find a better way to do this)
+                if (typeName.Contains('[') && typeName.Contains(']'))
+                {
+                    return
+                        SyntaxFactory.ObjectCreationExpression(SyntaxFactory.IdentifierName(typeName))
+                            .WithInitializer(SyntaxFactory.InitializerExpression(
+                                SyntaxKind.ArrayInitializerExpression));
                 }
-
-            return null;
+                else
+                {
+                    //a list or dictionary
+                    return
+                        SyntaxFactory.ObjectCreationExpression(SyntaxFactory.IdentifierName(typeName))
+                            .WithArgumentList(SyntaxFactory.ArgumentList());
+                }
+            }
         }
 
         private long GetRandomLong()

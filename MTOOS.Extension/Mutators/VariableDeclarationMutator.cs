@@ -4,6 +4,7 @@ using Microsoft.CodeAnalysis.CSharp.Syntax;
 using MTOOS.Extension.Helpers;
 using MTOOS.Extension.Models;
 using System.Collections.Generic;
+using System.Windows;
 
 namespace MTOOS.Extension.Mutators
 {
@@ -23,25 +24,37 @@ namespace MTOOS.Extension.Mutators
             _randomTypeGenerator = new RandomTypeGenerator(projectClasses);
         }
 
-        public override SyntaxNode VisitVariableDeclaration(VariableDeclarationSyntax node)
+        public override SyntaxNode VisitLocalDeclarationStatement(LocalDeclarationStatementSyntax node)
         {
-            var nodeSemanticModel = _semanticModel.Compilation.GetSemanticModel(node.SyntaxTree);
-            var typeInfo = nodeSemanticModel.GetTypeInfo(node);
+            var variableDeclarationSyntax = node.Declaration;
+            VariableDeclaratorSyntax variableDeclarator = variableDeclarationSyntax.Variables[0];
+
+            var nodeSemanticModel = 
+                _semanticModel.Compilation.GetSemanticModel(node.SyntaxTree);
+            var symbolInfo = nodeSemanticModel.GetSymbolInfo(variableDeclarationSyntax.Type);
+            var typeSymbol = symbolInfo.Symbol;
             
             var replaceValueSyntaxNode =
-                _randomTypeGenerator.ResolveType(typeInfo.Type.Name);
+                _randomTypeGenerator.ResolveType(typeSymbol.ToString());
 
-            //if (replaceValueSyntaxNode != null)
-            //{
-            //    //var newAssignmentNode =
-            //    //    SyntaxFactory.VariableDeclaration(
-            //    //        node.,
-            //    //        node.Left,
-            //    //        replaceValueSyntaxNode).NormalizeWhitespace();
+            if (replaceValueSyntaxNode != null)
+            {
 
-            //    //var mutatedClassRoot = _classRootNode.ReplaceNode(node, newAssignmentNode);
-            //    //_mutantCreator.CreateNewMutant(mutatedClassRoot, false);
-            //}
+                var newLocalVariableDeclarationNode =
+                    SyntaxFactory.LocalDeclarationStatement(
+                        SyntaxFactory.VariableDeclaration(
+                            variableDeclarationSyntax.Type)
+                        .WithVariables(
+                            SyntaxFactory.SingletonSeparatedList<VariableDeclaratorSyntax>(
+                                SyntaxFactory.VariableDeclarator(
+                                    variableDeclarator.Identifier)
+                                .WithInitializer(
+                                    SyntaxFactory.EqualsValueClause(replaceValueSyntaxNode)))))
+                    .NormalizeWhitespace();
+
+                var mutatedClassRoot = _classRootNode.ReplaceNode(node, newLocalVariableDeclarationNode);
+                _mutantCreator.CreateNewMutant(mutatedClassRoot, false);
+            }
 
             return node;
         }
