@@ -189,7 +189,7 @@ namespace MTOOS.Extension.MutationAnalysis
                             classMembersAssignmentsDeletion.Visit(classSyntaxNode);
                         }
 
-                        //mutate variable declaration with initialization statements
+                        //mutate local variable declaration with initializer statements
                         if (options.Contains("9"))
                         {
                             mutantCreator.MutatorType = "LVDM";

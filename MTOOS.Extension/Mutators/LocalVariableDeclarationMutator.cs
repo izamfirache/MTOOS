@@ -29,44 +29,47 @@ namespace MTOOS.Extension.Mutators
             var variableDeclarationSyntax = node.Declaration;
             VariableDeclaratorSyntax variableDeclarator = variableDeclarationSyntax.Variables[0];
 
-            var nodeSemanticModel = 
-                _semanticModel.Compilation.GetSemanticModel(node.SyntaxTree);
-            var symbolInfo = nodeSemanticModel.GetSymbolInfo(variableDeclarationSyntax.Type);
-            var typeSymbol = symbolInfo.Symbol;
-
-            ExpressionSyntax replaceValueSyntaxNode;
-            if (typeSymbol.IsAbstract)
+            if (variableDeclarator.Initializer != null)
             {
-                //get a type that implements that interface
-                string toBeResolvedType =
-                    _randomTypeGenerator.GetTypeForInterface(typeSymbol.ToString());
+                var nodeSemanticModel =
+                    _semanticModel.Compilation.GetSemanticModel(node.SyntaxTree);
+                var symbolInfo = nodeSemanticModel.GetSymbolInfo(variableDeclarationSyntax.Type);
+                var typeSymbol = symbolInfo.Symbol;
 
-                replaceValueSyntaxNode = toBeResolvedType != null ?
-                _randomTypeGenerator.ResolveType(toBeResolvedType) : null;
-            }
-            else
-            {
-                replaceValueSyntaxNode =
-                _randomTypeGenerator.ResolveType(typeSymbol.ToString());
-            }
+                ExpressionSyntax replaceValueSyntaxNode;
+                if (typeSymbol.IsAbstract)
+                {
+                    //get a type that implements that interface
+                    string toBeResolvedType =
+                        _randomTypeGenerator.GetTypeForInterface(typeSymbol.ToString());
 
-            if (replaceValueSyntaxNode != null)
-            {
+                    replaceValueSyntaxNode = toBeResolvedType != null ?
+                    _randomTypeGenerator.ResolveType(toBeResolvedType) : null;
+                }
+                else
+                {
+                    replaceValueSyntaxNode =
+                    _randomTypeGenerator.ResolveType(typeSymbol.ToString());
+                }
 
-                var newLocalVariableDeclarationNode =
-                    SyntaxFactory.LocalDeclarationStatement(
-                        SyntaxFactory.VariableDeclaration(
-                            variableDeclarationSyntax.Type)
-                        .WithVariables(
-                            SyntaxFactory.SingletonSeparatedList<VariableDeclaratorSyntax>(
-                                SyntaxFactory.VariableDeclarator(
-                                    variableDeclarator.Identifier)
-                                .WithInitializer(
-                                    SyntaxFactory.EqualsValueClause(replaceValueSyntaxNode)))))
-                    .NormalizeWhitespace();
+                if (replaceValueSyntaxNode != null)
+                {
 
-                var mutatedClassRoot = _classRootNode.ReplaceNode(node, newLocalVariableDeclarationNode);
-                _mutantCreator.CreateNewMutant(mutatedClassRoot, false);
+                    var newLocalVariableDeclarationNode =
+                        SyntaxFactory.LocalDeclarationStatement(
+                            SyntaxFactory.VariableDeclaration(
+                                variableDeclarationSyntax.Type)
+                            .WithVariables(
+                                SyntaxFactory.SingletonSeparatedList<VariableDeclaratorSyntax>(
+                                    SyntaxFactory.VariableDeclarator(
+                                        variableDeclarator.Identifier)
+                                    .WithInitializer(
+                                        SyntaxFactory.EqualsValueClause(replaceValueSyntaxNode)))))
+                        .NormalizeWhitespace();
+
+                    var mutatedClassRoot = _classRootNode.ReplaceNode(node, newLocalVariableDeclarationNode);
+                    _mutantCreator.CreateNewMutant(mutatedClassRoot, false);
+                }
             }
 
             return node;

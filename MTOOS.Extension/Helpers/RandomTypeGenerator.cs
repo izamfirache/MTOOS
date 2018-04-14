@@ -80,7 +80,7 @@ namespace MTOOS.Extension.Helpers
                  .Where(aet => aet.Name == interfaceName || aet.FullName == interfaceName)
                  .FirstOrDefault();
 
-            if (typeToResolveInfo != null)
+            if (typeToResolveInfo != null && typeToResolveInfo.IsInterface) //might be abstract class
             {
                 // interface -- find all exported types that implement that interface
                 List<Type> interfaceTypes = (from t in _projectExportedTypes
