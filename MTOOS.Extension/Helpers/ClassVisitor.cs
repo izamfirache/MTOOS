@@ -21,7 +21,7 @@ namespace MTOOS.Extension.Helpers
         public override SyntaxNode VisitClassDeclaration(ClassDeclarationSyntax node)
         {
             var newClass = new Class() { Name = node.Identifier.ToString() };
-
+            
             ConstructorDeclarationSyntax constructor = 
                 node.Members.OfType<ConstructorDeclarationSyntax>().FirstOrDefault();
 

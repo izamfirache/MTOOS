@@ -8,20 +8,20 @@ using System.Windows;
 
 namespace MTOOS.Extension.Mutators
 {
-    public class VariableDeclarationMutator : CSharpSyntaxRewriter
+    public class LocalVariableDeclarationMutator : CSharpSyntaxRewriter
     {
         private SyntaxNode _classRootNode;
         private MutantCreator _mutantCreator;
         private SemanticModel _semanticModel;
         private RandomTypeGenerator _randomTypeGenerator;
 
-        public VariableDeclarationMutator(SyntaxNode classRootNode, MutantCreator mutantCreator,
-            SemanticModel semanticModel, List<Class> projectClasses)
+        public LocalVariableDeclarationMutator(SyntaxNode classRootNode, MutantCreator mutantCreator,
+            SemanticModel semanticModel, RandomTypeGenerator randomTypeGenerator)
         {
             _classRootNode = classRootNode;
             _mutantCreator = mutantCreator;
             _semanticModel = semanticModel;
-            _randomTypeGenerator = new RandomTypeGenerator(projectClasses);
+            _randomTypeGenerator = randomTypeGenerator;
         }
 
         public override SyntaxNode VisitLocalDeclarationStatement(LocalDeclarationStatementSyntax node)
@@ -33,9 +33,22 @@ namespace MTOOS.Extension.Mutators
                 _semanticModel.Compilation.GetSemanticModel(node.SyntaxTree);
             var symbolInfo = nodeSemanticModel.GetSymbolInfo(variableDeclarationSyntax.Type);
             var typeSymbol = symbolInfo.Symbol;
-            
-            var replaceValueSyntaxNode =
+
+            ExpressionSyntax replaceValueSyntaxNode;
+            if (typeSymbol.IsAbstract)
+            {
+                //get a type that implements that interface
+                string toBeResolvedType =
+                    _randomTypeGenerator.GetTypeForInterface(typeSymbol.ToString());
+
+                replaceValueSyntaxNode = toBeResolvedType != null ?
+                _randomTypeGenerator.ResolveType(toBeResolvedType) : null;
+            }
+            else
+            {
+                replaceValueSyntaxNode =
                 _randomTypeGenerator.ResolveType(typeSymbol.ToString());
+            }
 
             if (replaceValueSyntaxNode != null)
             {

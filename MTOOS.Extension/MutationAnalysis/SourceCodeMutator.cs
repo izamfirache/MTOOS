@@ -57,7 +57,7 @@ namespace MTOOS.Extension.MutationAnalysis
 
             var generatedMutants = 
                 GenerateMutantsForProject(projectAssembly, projectSemanticModel, 
-                    options, workspace, projectClasses);
+                    options, workspace, projectClasses, solution, projectToAnalyze.OutputFilePath);
             
             return new SourceCodeMutationResult()
             {
@@ -71,7 +71,9 @@ namespace MTOOS.Extension.MutationAnalysis
             SemanticModel projectSemanticModel,
             List<string> options,
             Workspace workspace,
-            List<Class> projectClasses)
+            List<Class> projectClasses,
+            Solution solution,
+            string projectOutputFilePath)
         {
             var generatedMutants = new List<GeneratedMutant>();
 
@@ -93,6 +95,11 @@ namespace MTOOS.Extension.MutationAnalysis
                         var className = classSyntaxNode.Identifier.Value.ToString();
 
                         var mutantCreator = new MutantCreator(className, classSyntaxNode);
+
+                        // might be null if the project is not compiled ???
+                        var assembly = Assembly.LoadFile(projectOutputFilePath); 
+                        Type[] _assemblyExportedTypes = assembly.GetExportedTypes();
+                        var typeResolver = new RandomTypeGenerator(projectClasses, _assemblyExportedTypes);
 
                         //mutate boundary operators
                         if (options.Contains("1"))
@@ -138,7 +145,7 @@ namespace MTOOS.Extension.MutationAnalysis
                             //default value for the desired type
                             mutantCreator.MutatorType = "AEM";
                             var assignmentExprMutator = new AssignmentExprMutator
-                                (classSyntaxNode, mutantCreator, projectSemanticModel, projectClasses);
+                                (classSyntaxNode, mutantCreator, projectSemanticModel, typeResolver);
                             assignmentExprMutator.Visit(classSyntaxNode);
                         }
 
@@ -149,7 +156,7 @@ namespace MTOOS.Extension.MutationAnalysis
                             //value with a random generated value for that type
                             mutantCreator.MutatorType = "REM";
                             var returnStatementMutator = new ReturnExpressionMutator
-                                (classSyntaxNode, mutantCreator, projectSemanticModel, projectClasses);
+                                (classSyntaxNode, mutantCreator, projectSemanticModel, typeResolver);
                             returnStatementMutator.Visit(classSyntaxNode);
                         }
 
@@ -186,8 +193,8 @@ namespace MTOOS.Extension.MutationAnalysis
                         if (options.Contains("9"))
                         {
                             mutantCreator.MutatorType = "LVDM";
-                            var voidMethodCallMutator = new VariableDeclarationMutator
-                                (classSyntaxNode, mutantCreator, projectSemanticModel, projectClasses);
+                            var voidMethodCallMutator = new LocalVariableDeclarationMutator
+                                (classSyntaxNode, mutantCreator, projectSemanticModel, typeResolver);
                             voidMethodCallMutator.Visit(classSyntaxNode);
                         }
 

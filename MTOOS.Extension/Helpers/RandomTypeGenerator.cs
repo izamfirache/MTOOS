@@ -1,6 +1,7 @@
 ﻿using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
+using Microsoft.CodeAnalysis.FindSymbols;
 using MTOOS.Extension.Models;
 using System;
 using System.Collections.Generic;
@@ -12,13 +13,13 @@ namespace MTOOS.Extension.Helpers
 {
     public class RandomTypeGenerator
     {
-        private RoslynSetupHelper _roslynHelper;
         private List<Class> _projectClasses;
+        private Type[] _projectExportedTypes;
 
-        public RandomTypeGenerator(List<Class> projectClasses)
+        public RandomTypeGenerator(List<Class> projectClasses, Type[] projectExportedTypes)
         {
-            _roslynHelper = new RoslynSetupHelper();
             _projectClasses = projectClasses;
+            _projectExportedTypes = projectExportedTypes;
         }
 
         public ExpressionSyntax ResolveType(string typeName)
@@ -67,6 +68,34 @@ namespace MTOOS.Extension.Helpers
                     return GetRandomInt() % 2 == 0 ?
                         SyntaxFactory.LiteralExpression(SyntaxKind.TrueLiteralExpression) :
                         SyntaxFactory.LiteralExpression(SyntaxKind.FalseLiteralExpression);
+            }
+
+            return null;
+        }
+
+        public string GetTypeForInterface(string interfaceName)
+        {
+            // will resolve only the interfaces defined in the source code project
+            Type typeToResolveInfo = _projectExportedTypes
+                 .Where(aet => aet.Name == interfaceName || aet.FullName == interfaceName)
+                 .FirstOrDefault();
+
+            if (typeToResolveInfo != null)
+            {
+                // interface -- find all exported types that implement that interface
+                List<Type> interfaceTypes = (from t in _projectExportedTypes
+                                             where !t.IsInterface && !t.IsAbstract
+                                             where typeToResolveInfo.IsAssignableFrom(t)
+                                             select t).ToList();
+
+                if (interfaceTypes.Count != 0)
+                {
+                    return interfaceTypes.FirstOrDefault().Name;
+                }
+                else
+                {
+                    return null;
+                }
             }
 
             return null;

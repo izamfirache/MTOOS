@@ -15,26 +15,40 @@ namespace MTOOS.Extension.Mutators
         private RandomTypeGenerator _randomTypeGenerator;
 
         public ReturnExpressionMutator(SyntaxNode classRootNode, MutantCreator mutantCreator,
-            SemanticModel semanticModel, List<Class> projectClasses)
+            SemanticModel semanticModel, RandomTypeGenerator randomTypeGenerator)
         {
             _classRootNode = classRootNode;
             _mutantCreator = mutantCreator;
             _semanticModel = semanticModel;
-            _randomTypeGenerator = new RandomTypeGenerator(projectClasses);
+            _randomTypeGenerator = randomTypeGenerator;
         }
 
         public override SyntaxNode VisitReturnStatement(ReturnStatementSyntax node)
         {
             var nodeSemanticModel = _semanticModel.Compilation.GetSemanticModel(node.SyntaxTree);
             var typeInfo = nodeSemanticModel.GetTypeInfo(node.Expression);
-            var randomValueSyntaxNode =
+
+            ExpressionSyntax replaceValueSyntaxNode;
+            if (typeInfo.Type.IsAbstract) // TODO: rethink this, might be abstract class, not interface
+            {
+                //get a type that implements that interface
+                string toBeResolvedType =
+                    _randomTypeGenerator.GetTypeForInterface(typeInfo.Type.Name);
+
+                replaceValueSyntaxNode = toBeResolvedType != null ?
+                _randomTypeGenerator.ResolveType(toBeResolvedType) : null;
+            }
+            else
+            {
+                replaceValueSyntaxNode =
                 _randomTypeGenerator.ResolveType(typeInfo.Type.Name);
+            }
 
             //replace with random value
-            if (randomValueSyntaxNode != null)
+            if (replaceValueSyntaxNode != null)
             {
                 var newReturnStatemenNode =
-                    SyntaxFactory.ReturnStatement(randomValueSyntaxNode)
+                    SyntaxFactory.ReturnStatement(replaceValueSyntaxNode)
                         .NormalizeWhitespace();
 
                 var mutatedClassRoot = _classRootNode.ReplaceNode(node, newReturnStatemenNode);
