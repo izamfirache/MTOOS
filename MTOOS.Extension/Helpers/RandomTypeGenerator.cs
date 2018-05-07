@@ -14,12 +14,10 @@ namespace MTOOS.Extension.Helpers
     public class RandomTypeGenerator
     {
         private List<Class> _projectClasses;
-        private Type[] _projectExportedTypes;
 
-        public RandomTypeGenerator(List<Class> projectClasses, Type[] projectExportedTypes)
+        public RandomTypeGenerator(List<Class> projectClasses)
         {
             _projectClasses = projectClasses;
-            _projectExportedTypes = projectExportedTypes;
         }
 
         public ExpressionSyntax ResolveType(string typeName)
@@ -75,28 +73,28 @@ namespace MTOOS.Extension.Helpers
 
         public string GetTypeForInterface(string interfaceName)
         {
-            // will resolve only the interfaces defined in the source code project
-            Type typeToResolveInfo = _projectExportedTypes
-                 .Where(aet => aet.Name == interfaceName || aet.FullName == interfaceName)
-                 .FirstOrDefault();
+            //// will resolve only the interfaces defined in the source code project
+            //Type typeToResolveInfo = _projectExportedTypes
+            //     .Where(aet => aet.Name == interfaceName || aet.FullName == interfaceName)
+            //     .FirstOrDefault();
 
-            if (typeToResolveInfo != null && typeToResolveInfo.IsInterface) //might be abstract class
-            {
-                // interface -- find all exported types that implement that interface
-                List<Type> interfaceTypes = (from t in _projectExportedTypes
-                                             where !t.IsInterface && !t.IsAbstract
-                                             where typeToResolveInfo.IsAssignableFrom(t)
-                                             select t).ToList();
+            //if (typeToResolveInfo != null && typeToResolveInfo.IsInterface) //might be abstract class
+            //{
+            //    // interface -- find all exported types that implement that interface
+            //    List<Type> interfaceTypes = (from t in _projectExportedTypes
+            //                                 where !t.IsInterface && !t.IsAbstract
+            //                                 where typeToResolveInfo.IsAssignableFrom(t)
+            //                                 select t).ToList();
 
-                if (interfaceTypes.Count != 0)
-                {
-                    return interfaceTypes.FirstOrDefault().Name;
-                }
-                else
-                {
-                    return null;
-                }
-            }
+            //    if (interfaceTypes.Count != 0)
+            //    {
+            //        return interfaceTypes.FirstOrDefault().Name;
+            //    }
+            //    else
+            //    {
+            //        return null;
+            //    }
+            //}
 
             return null;
         }
@@ -111,38 +109,49 @@ namespace MTOOS.Extension.Helpers
                     _projectClasses.Where(
                         c => typeName.Contains(string.Format(".{0}", c.Name))
                         || c.Name == typeName).FirstOrDefault();
-                
-                var ctorParameters = 
-                    new SyntaxNodeOrToken[classInfo.Constructor.Parameters.Count 
-                        + classInfo.Constructor.Parameters.Count - 1]; // includes commas
-                int position = 0;
-                foreach(MethodParameter param in classInfo.Constructor.Parameters)
+
+                if (classInfo.Constructor.Parameters.Count != 0)
                 {
-                    if (IsPrimitiveType(param.Type.ToLower()))
+                    var ctorParameters =
+                        new SyntaxNodeOrToken[classInfo.Constructor.Parameters.Count
+                            + classInfo.Constructor.Parameters.Count - 1]; // includes commas
+                    int position = 0;
+                    foreach (MethodParameter param in classInfo.Constructor.Parameters)
                     {
-                        ctorParameters[position] = 
-                            SyntaxFactory.Argument(ResolvePrimitiveType(param.Type.ToLower()));
-                    }
-                    else
-                    {
-                        ctorParameters[position] =
-                            SyntaxFactory.Argument(ResolveCustomType(param.Type));
+                        if (IsPrimitiveType(param.Type.ToLower()))
+                        {
+                            ctorParameters[position] =
+                                SyntaxFactory.Argument(ResolvePrimitiveType(param.Type.ToLower()));
+                        }
+                        else
+                        {
+                            ctorParameters[position] =
+                                SyntaxFactory.Argument(ResolveCustomType(param.Type));
+                        }
+
+                        if (position != classInfo.Constructor.Parameters.Count) //not last ctor param
+                        {
+                            ctorParameters[position + 1] =
+                                SyntaxFactory.Token(SyntaxKind.CommaToken);
+                        }
+
+                        position = position + 2;
                     }
 
-                    if(position != classInfo.Constructor.Parameters.Count) //not last ctor param
-                    {
-                        ctorParameters[position + 1] =
-                            SyntaxFactory.Token(SyntaxKind.CommaToken);
-                    }
-
-                    position = position + 2;
-                }
-
-                return SyntaxFactory.ObjectCreationExpression(
+                    return SyntaxFactory.ObjectCreationExpression(
                         SyntaxFactory.IdentifierName(typeName))
                             .WithArgumentList(
                                 SyntaxFactory.ArgumentList(
                                     SyntaxFactory.SeparatedList<ArgumentSyntax>(ctorParameters)));
+                }
+                else
+                {
+                    return SyntaxFactory.ObjectCreationExpression(
+                        SyntaxFactory.IdentifierName(typeName))
+                            .WithArgumentList(
+                                SyntaxFactory.ArgumentList(
+                                    SyntaxFactory.SeparatedList<ArgumentSyntax>()));
+                }
             }
             else
             {

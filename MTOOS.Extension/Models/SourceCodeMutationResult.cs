@@ -1,4 +1,5 @@
 ﻿using Microsoft.CodeAnalysis;
+using Microsoft.CodeAnalysis.CSharp.Syntax;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -11,5 +12,7 @@ namespace MTOOS.Extension.Models
     {
         public List<GeneratedMutant> GeneratedMutants { get; set; }
         public string OutputPath { get; set; }
+
+        public List<UsingDirectiveSyntax> Usings { get; set; }
     }
 }

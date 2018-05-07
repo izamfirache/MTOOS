@@ -16,7 +16,7 @@
             <ColumnDefinition Width="40*"/>
             <ColumnDefinition Width="312*"/>
         </Grid.ColumnDefinitions>
-        <Button Content="Start a new Mutation Testing session" HorizontalAlignment="Left" Margin="102.6,375,0,0" VerticalAlignment="Top" Width="259" RenderTransformOrigin="0.509,2.213" Height="40" Grid.Column="4" Click="StartMutationTesting"/>
+        <Button Content="Start a new Mutation Testing session" HorizontalAlignment="Left" Margin="102.6,375,0,0" VerticalAlignment="Top" Width="270" RenderTransformOrigin="0.509,2.213" Height="40" Grid.Column="4" Click="StartMutationTesting"/>
         <Label Content="Mutation Testing for Object Oriented Software - MTOOS" HorizontalAlignment="Left" Margin="10,10,0,0" VerticalAlignment="Top" Width="523" Grid.ColumnSpan="5" FontSize="20"/>
         <CheckBox x:Name="BoundaryOpMutator" Content="1. Boundary Operator Mutator - BOM" HorizontalAlignment="Left" Margin="0,124,0,0" VerticalAlignment="Top" Grid.ColumnSpan="4" Width="267"/>
         <Label Content="Choose the mutations you want to perform:" HorizontalAlignment="Left" Margin="21,85,0,0" VerticalAlignment="Top" RenderTransformOrigin="0.362,-0.028" Grid.ColumnSpan="5" Width="295" Height="29"/>
@@ -29,7 +29,7 @@
             Grid.Column="4" 
             HorizontalAlignment="Left" 
             Height="313" Margin="102.6,57,0,0" 
-            VerticalAlignment="Top" Width="260">
+            VerticalAlignment="Top" Width="270">
             <ListView.View>
                 <GridView>
                     <GridViewColumn 
@@ -89,5 +89,6 @@
             Content="9. Local Variable Declaration With Initalization Mutator - LVDM" 
             HorizontalAlignment="Left" Margin="0,283,0,0" 
             VerticalAlignment="Top" Grid.ColumnSpan="5" Width="363"/>
+        <Button Content="Check All" HorizontalAlignment="Left" Margin="102.6,420,0,0" VerticalAlignment="Top" Width="56" Grid.Column="4" Click="Button_Click"/>
     </Grid>
 </UserControl>

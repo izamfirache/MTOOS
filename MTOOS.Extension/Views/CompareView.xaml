@@ -12,9 +12,9 @@
     <Grid x:Name="grdCompare" Margin="0,0,0,0.4">
         <ListView x:Name="liveMutants" 
                   HorizontalAlignment="Left" 
-                  Height="333" Margin="818,45,0,0" 
+                  Height="471" Margin="818,45,0,0" 
                   VerticalAlignment="Top"  
-                  Width="217"
+                  Width="272"
                   PreviewMouseLeftButtonUp="LiveMutantslListView_Click">
             <ListView.View>
                 <GridView>

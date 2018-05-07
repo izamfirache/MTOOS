@@ -40,7 +40,7 @@ namespace MTOOS.Extension.Mutators
                 finalMutantCodeRoot = finalMutantCodeRoot.NormalizeWhitespace();
                 _originalClassRootNode = _originalClassRootNode.NormalizeWhitespace();
             }
-
+            
             GeneratedMutants.Add(new GeneratedMutant()
             {
                 Id = Guid.NewGuid(),

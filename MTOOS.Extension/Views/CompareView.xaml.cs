@@ -52,18 +52,24 @@ namespace MTOOS.Extension.Views
                     //compare and highlight differences
                     for (int i = 0; i < originalProgramLines.Count(); i++)
                     {
-                        if (originalProgramLines[i] != "\r" && liveMutantLines[i] != "\r")
+                        try
                         {
-                            var originalProgramParagraph = new Paragraph(new Run(originalProgramLines[i]));
-                            var liveMutantLineParagraph = new Paragraph(new Run(liveMutantLines[i]));
-
-                            if (originalProgramLines[i] != liveMutantLines[i])
+                            if (originalProgramLines[i] != "\r" && liveMutantLines[i] != "\r")
                             {
-                                originalProgramParagraph.Foreground = Brushes.Red;
-                                liveMutantLineParagraph.Foreground = Brushes.Red;
+                                var originalProgramParagraph = new Paragraph(new Run(originalProgramLines[i]));
+                                var liveMutantLineParagraph = new Paragraph(new Run(liveMutantLines[i]));
+
+                                if (originalProgramLines[i] != liveMutantLines[i])
+                                {
+                                    originalProgramParagraph.Foreground = Brushes.Red;
+                                    liveMutantLineParagraph.Foreground = Brushes.Red;
+                                }
+                                originalProgram.Document.Blocks.Add(originalProgramParagraph);
+                                liveMutant.Document.Blocks.Add(liveMutantLineParagraph);
                             }
-                            originalProgram.Document.Blocks.Add(originalProgramParagraph);
-                            liveMutant.Document.Blocks.Add(liveMutantLineParagraph);
+                        }catch(Exception)
+                        {
+
                         }
                     }
                 }

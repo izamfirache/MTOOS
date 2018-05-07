@@ -1,5 +1,6 @@
 ﻿using EnvDTE;
 using EnvDTE80;
+using Microsoft.VisualStudio.Shell;
 using MTOOS.Extension.Models;
 using System;
 using System.Collections;
@@ -17,7 +18,7 @@ namespace MTOOS.Extension.Views
     {
         public List<string> CheckedOptions;
         public List<GeneratedMutant> GeneratedMutantList = new List<GeneratedMutant>();
-
+        private List<Project> SoulutionProjects;
         /// <summary>
         /// Initializes a new instance of the <see cref="MutantKillerWindowControl"/> class.
         /// </summary>
@@ -51,8 +52,8 @@ namespace MTOOS.Extension.Views
             Project unitTestProject;
             if (projects.Count == 2)
             {
-                sourceCodeProject = GetSourceCodeProject(dte, projects);
-                unitTestProject = GetUnitTestProject(dte, projects);
+                sourceCodeProject = GetSourceCodeProject(projects);
+                unitTestProject = GetUnitTestProject(projects);
                 if (sourceCodeProject != null && unitTestProject != null)
                 {
                     CheckedOptions = GetCheckedOptions();
@@ -78,13 +79,13 @@ namespace MTOOS.Extension.Views
             }
         }
 
-        private Project GetUnitTestProject(DTE2 dte, List<ProjectPresentation> projects)
+        private Project GetUnitTestProject(List<ProjectPresentation> projects)
         {
             foreach (ProjectPresentation p in projects)
             {
                 if (p.Type == "UnitTest")
                 {
-                    foreach (Project sp in dte.Solution.Projects)
+                    foreach (Project sp in SoulutionProjects)
                     {
                         if (sp.Name == p.Name)
                         {
@@ -97,13 +98,13 @@ namespace MTOOS.Extension.Views
             return null;
         }
 
-        private Project GetSourceCodeProject(DTE2 dte, List<ProjectPresentation> projects)
+        private Project GetSourceCodeProject(List<ProjectPresentation> projects)
         {
             foreach (ProjectPresentation p in projects)
             {
                 if (p.Type == "SourceCode")
                 {
-                    foreach (Project sp in dte.Solution.Projects)
+                    foreach (Project sp in SoulutionProjects)
                     {
                         if (sp.Name == p.Name)
                         {
@@ -115,22 +116,73 @@ namespace MTOOS.Extension.Views
             return null;
         }
 
+        private static DTE2 GetActiveIDE()
+        {
+            // Get an instance of currently running Visual Studio IDE.
+            DTE2 dte2 = Package.GetGlobalService(typeof(DTE)) as DTE2;
+            return dte2;
+        }
+
         private List<ProjectPresentation> GetSolutionProjects()
         {
             var projects = new List<ProjectPresentation>();
-            var dte = (DTE2)Microsoft.VisualStudio.Shell.ServiceProvider
-                    .GlobalProvider.GetService(typeof(EnvDTE.DTE));
+            List<Project> list = new List<Project>();
+            Projects dteProjects = GetActiveIDE().Solution.Projects;
+            var item = dteProjects.GetEnumerator();
 
-            foreach (Project p in dte.Solution.Projects)
+            while (item.MoveNext())
+            {
+                var project = item.Current as Project;
+                if (project == null)
+                {
+                    continue;
+                }
+
+                if (project.Kind == "{66A26720-8FB5-11D2-AA7E-00C04F688DDE}")
+                {
+                    list.AddRange(GetSolutionFolderProjects(project));
+                }
+                else
+                {
+                    list.Add(project);
+                }
+            }
+
+            foreach (Project p in list)
             {
                 projects.Add(new ProjectPresentation()
                 {
                     Name = p.Name,
-                    Type = p.Name.Contains("UnitTest") ? "UnitTest" : "SourceCode"
+                    Type = p.Name.Contains("Tests") || p.Name.Contains("Test") ? "UnitTest" : "SourceCode"
                 });
             }
 
+            SoulutionProjects = list;
             return projects;
+        }
+
+        private static IEnumerable<Project> GetSolutionFolderProjects(Project solutionFolder)
+        {
+            List<Project> list = new List<Project>();
+            for (var i = 1; i <= solutionFolder.ProjectItems.Count; i++)
+            {
+                var subProject = solutionFolder.ProjectItems.Item(i).SubProject;
+                if (subProject == null)
+                {
+                    continue;
+                }
+
+                // If this is another solution folder, do a recursive call, otherwise add
+                if (subProject.Kind == "{66A26720-8FB5-11D2-AA7E-00C04F688DDE}")
+                {
+                    list.AddRange(GetSolutionFolderProjects(subProject));
+                }
+                else
+                {
+                    list.Add(subProject);
+                }
+            }
+            return list;
         }
 
         private List<string> GetCheckedOptions()
@@ -147,6 +199,19 @@ namespace MTOOS.Extension.Views
             if (VariableDeclarationMutator.IsChecked == true) { checkedOptions.Add("9"); }
 
             return checkedOptions;
+        }
+
+        private void Button_Click(object sender, RoutedEventArgs e)
+        {
+            BoundaryOpMutator.IsChecked = true;
+            RelationalAndEqualityOpMutator.IsChecked = true;
+            RemoveNonBasicConditionalsMutator.IsChecked = true;
+            MathOperatorsMutator.IsChecked = true;
+            AssignmentExprMutator.IsChecked = true;
+            ReturnExpressionMutator.IsChecked = true;
+            VoidMethodCallMutator.IsChecked = true;
+            ClassMemberAssignDel.IsChecked = true;
+            VariableDeclarationMutator.IsChecked = true;
         }
     }
 }

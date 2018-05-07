@@ -31,28 +31,28 @@ namespace MTOOS.Extension
              var sourceprojectMutationResult = 
                 sourceCodeMutator.PerformMutationAnalysisOnSourceCodeProject(sourceCodeProject, options);
 
-            //var liveMutants = new List<GeneratedMutant>();
-            //if (sourceprojectMutationResult.GeneratedMutants.Count != 0)
-            //{
-            //    var unitTestProjectMutation =
-            //        MutateUnitTestProject(solution, sourceprojectMutationResult, 
-            //        unitTestProject, sourceCodeProject);
+            var liveMutants = new List<GeneratedMutant>();
+            if (sourceprojectMutationResult.GeneratedMutants.Count != 0)
+            {
+                var unitTestProjectMutation =
+                    MutateUnitTestProject(solution, sourceprojectMutationResult,
+                        unitTestProject, sourceCodeProject);
 
-            //    liveMutants = RunTheMutatedUnitTestSuiteUsingNUnitConsole
-            //        (unitTestProjectMutation, dte, sourceprojectMutationResult.GeneratedMutants);
-            //}
-            //else
-            //{
-            //    MessageBox.Show("Error at source code project mutation");
-            //}
+                liveMutants = RunTheMutatedUnitTestSuiteUsingNUnitConsole
+                    (unitTestProjectMutation, dte, sourceprojectMutationResult.GeneratedMutants);
+            }
+            else
+            {
+                MessageBox.Show("Error at source code project mutation");
+            }
 
             stopwatch.Stop();
-            MessageBox.Show(string.Format("Done. Execution time: {0} ms. {1} mutants generated.",
-                stopwatch.ElapsedMilliseconds.ToString(), sourceprojectMutationResult.GeneratedMutants.Count));
+            MessageBox.Show(string.Format("Done. Execution time: {0} ms. {1} mutants generated. " +
+                "{2} live mutants.",
+                stopwatch.ElapsedMilliseconds.ToString(), sourceprojectMutationResult.GeneratedMutants.Count,
+                liveMutants.Count));
 
-            //return liveMutants;
-
-            return sourceprojectMutationResult.GeneratedMutants;
+            return liveMutants;
         }
 
         private UnitTestMutationResult MutateUnitTestProject(Solution2 solution, 
@@ -63,13 +63,6 @@ namespace MTOOS.Extension
             var unitTestMutationResult = 
                 unitTestsMutator.PerformMutationForUnitTestProject(unitTestProject, sourceCodeMutationResult, 
                 sourceCodeProject);
-
-            unitTestProject.ProjectItems.AddFromFile(unitTestsMutator.MutatedUnitTestCodePath);
-            unitTestProject.Save();
-
-            SolutionBuild2 solutionBuild2 = (SolutionBuild2)unitTestProject.DTE.Solution.SolutionBuild;
-            solutionBuild2.BuildProject(solutionBuild2.ActiveConfiguration.Name,
-                unitTestProject.UniqueName, true);
 
             return unitTestMutationResult;
         }
@@ -82,7 +75,7 @@ namespace MTOOS.Extension
             string solutionDir = Path.GetDirectoryName(dte.Solution.FullName);
             var packagesFolder = Path.Combine(solutionDir, "packages");
             var NUnitConsolePath = Path.Combine(packagesFolder,
-                "NUnit.ConsoleRunner.3.8.0\\tools\\nunit3-console.exe"); // TODO: avoid the version dependency!!
+                "NUnit.ConsoleRunner.3.7.0\\tools\\nunit3-console.exe"); // TODO: avoid the version dependency!!
 
             var nunitOutputFilePath = Path.GetDirectoryName(unitTestProjectMutationResult.OutputPath);
 
@@ -108,9 +101,9 @@ namespace MTOOS.Extension
                 MessageBox.Show(e.Message);
             }
 
-            var NUnitResultXmlFilePath = Path.Combine(Path.GetDirectoryName(
-                        Path.GetDirectoryName(unitTestProjectMutationResult.OutputPath)),
-                        @"Debug\\TestResult.xml");
+            var NUnitResultXmlFilePath = Path.Combine(
+                Path.GetDirectoryName(unitTestProjectMutationResult.OutputPath),
+                        @"TestResult.xml");
 
             List<GeneratedMutant> liveMutants = new List<GeneratedMutant>();
             if (File.Exists(NUnitResultXmlFilePath))
