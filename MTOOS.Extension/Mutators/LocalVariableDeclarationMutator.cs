@@ -36,21 +36,22 @@ namespace MTOOS.Extension.Mutators
                 var symbolInfo = nodeSemanticModel.GetSymbolInfo(variableDeclarationSyntax.Type);
                 var typeSymbol = symbolInfo.Symbol;
 
-                ExpressionSyntax replaceValueSyntaxNode;
-                if (typeSymbol.IsAbstract)
-                {
-                    //get a type that implements that interface
-                    string toBeResolvedType =
-                        _randomTypeGenerator.GetTypeForInterface(typeSymbol.ToString());
+                ExpressionSyntax replaceValueSyntaxNode = _randomTypeGenerator.ResolveType(typeSymbol.ToString());
 
-                    replaceValueSyntaxNode = toBeResolvedType != null ?
-                    _randomTypeGenerator.ResolveType(toBeResolvedType) : null;
-                }
-                else
-                {
-                    replaceValueSyntaxNode =
-                    _randomTypeGenerator.ResolveType(typeSymbol.ToString());
-                }
+                //if (typeSymbol.IsAbstract)
+                //{
+                //    //get a type that implements that interface
+                //    string toBeResolvedType =
+                //        _randomTypeGenerator.GetTypeForInterface(typeSymbol.ToString());
+
+                //    replaceValueSyntaxNode = toBeResolvedType != null ?
+                //    _randomTypeGenerator.ResolveType(toBeResolvedType) : null;
+                //}
+                //else
+                //{
+                //    replaceValueSyntaxNode =
+                //        _randomTypeGenerator.ResolveType(typeSymbol.ToString());
+                //}
 
                 if (replaceValueSyntaxNode != null)
                 {

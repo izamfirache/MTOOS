@@ -2,6 +2,7 @@
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 using MTOOS.Extension.Helpers;
+using System;
 
 namespace MTOOS.Extension.Mutators
 {
@@ -26,11 +27,18 @@ namespace MTOOS.Extension.Mutators
 
             if (typeInfo.Type.Name.ToLower() == "void")
             {
-                //get the parent node -- usually an ExpressionStatement node
-                var voidInvocationParentNode = node.Parent;
-                var mutatedClassRoot = 
-                    _classRootNode.RemoveNode(voidInvocationParentNode, SyntaxRemoveOptions.KeepNoTrivia);
-                _mutantCreator.CreateNewMutant(mutatedClassRoot, true);
+                try
+                {
+                    //get the parent node -- usually an ExpressionStatement node
+                    var voidInvocationParentNode = node.Parent;
+                    var mutatedClassRoot =
+                        _classRootNode.RemoveNode(voidInvocationParentNode, SyntaxRemoveOptions.KeepNoTrivia);
+                    _mutantCreator.CreateNewMutant(mutatedClassRoot, true);
+                }
+                catch (Exception e)
+                {
+
+                }
             }
 
             return node;

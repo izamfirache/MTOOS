@@ -29,8 +29,15 @@ namespace MTOOS.Extension.Helpers
             }
             else
             {
-                var customType = ResolveCustomType(typeName);
-                return customType ?? null;
+                try
+                {
+                    var customType = ResolveCustomType(typeName);
+                    return customType;
+                }
+                catch (Exception)
+                {
+                    return null;
+                }
             }
         }
 
@@ -101,75 +108,100 @@ namespace MTOOS.Extension.Helpers
 
         private ObjectCreationExpressionSyntax ResolveCustomType(string typeName)
         {
-            if ((_projectClasses.Any(c => typeName.Contains(string.Format(".{0}", c.Name))) 
-                && !typeName.Contains("List") && !typeName.Contains("Dictionary"))
-                || _projectClasses.Any(c => c.Name == typeName))
+            if (!typeName.Contains("anonymous") && !typeName.Contains("System.Threading.Tasks") 
+                && !typeName.Contains("IDictionary") && !typeName.Contains("IEnumerable"))
             {
-                var classInfo =
-                    _projectClasses.Where(
-                        c => typeName.Contains(string.Format(".{0}", c.Name))
-                        || c.Name == typeName).FirstOrDefault();
-
-                if (classInfo.Constructor.Parameters.Count != 0)
+                // project defined class
+                bool isProjectDefinedClass = false;
+                Class projectDefinedClass = new Class();
+                foreach (Class projectClass in _projectClasses)
                 {
-                    var ctorParameters =
-                        new SyntaxNodeOrToken[classInfo.Constructor.Parameters.Count
-                            + classInfo.Constructor.Parameters.Count - 1]; // includes commas
-                    int position = 0;
-                    foreach (MethodParameter param in classInfo.Constructor.Parameters)
+                    if (typeName.Contains(projectClass.Name))
                     {
-                        if (IsPrimitiveType(param.Type.ToLower()))
-                        {
-                            ctorParameters[position] =
-                                SyntaxFactory.Argument(ResolvePrimitiveType(param.Type.ToLower()));
-                        }
-                        else
-                        {
-                            ctorParameters[position] =
-                                SyntaxFactory.Argument(ResolveCustomType(param.Type));
-                        }
-
-                        if (position != classInfo.Constructor.Parameters.Count) //not last ctor param
-                        {
-                            ctorParameters[position + 1] =
-                                SyntaxFactory.Token(SyntaxKind.CommaToken);
-                        }
-
-                        position = position + 2;
+                        isProjectDefinedClass = true;
+                        projectDefinedClass.Name = projectClass.Name;
+                        projectDefinedClass.Constructor = projectClass.Constructor;
                     }
+                    break;
+                }
 
-                    return SyntaxFactory.ObjectCreationExpression(
-                        SyntaxFactory.IdentifierName(typeName))
-                            .WithArgumentList(
-                                SyntaxFactory.ArgumentList(
-                                    SyntaxFactory.SeparatedList<ArgumentSyntax>(ctorParameters)));
+                // array, list or dictionary
+                bool isExtraSupportedType =
+                    typeName.Contains("List")
+                    || typeName.Contains("Dictionary")
+                    || (typeName.Contains('[') && typeName.Contains(']')) ?
+                    true : false;
+
+                if (isProjectDefinedClass)
+                {
+                    if (projectDefinedClass.Constructor.Parameters.Count != 0)
+                    {
+                        var ctorParameters =
+                            new SyntaxNodeOrToken[projectDefinedClass.Constructor.Parameters.Count
+                                + projectDefinedClass.Constructor.Parameters.Count - 1]; // includes commas
+                        int position = 0;
+                        foreach (MethodParameter param in projectDefinedClass.Constructor.Parameters)
+                        {
+                            if (IsPrimitiveType(param.Type.ToLower()))
+                            {
+                                ctorParameters[position] =
+                                    SyntaxFactory.Argument(ResolvePrimitiveType(param.Type.ToLower()));
+                            }
+                            else
+                            {
+                                ctorParameters[position] =
+                                    SyntaxFactory.Argument(ResolveCustomType(param.Type));
+                            }
+
+                            if (position != projectDefinedClass.Constructor.Parameters.Count) //not last ctor param
+                            {
+                                ctorParameters[position + 1] =
+                                    SyntaxFactory.Token(SyntaxKind.CommaToken);
+                            }
+
+                            position = position + 2;
+                        }
+
+                        return SyntaxFactory.ObjectCreationExpression(
+                            SyntaxFactory.IdentifierName(typeName))
+                                .WithArgumentList(
+                                    SyntaxFactory.ArgumentList(
+                                        SyntaxFactory.SeparatedList<ArgumentSyntax>(ctorParameters)));
+                    }
+                    else
+                    {
+                        return SyntaxFactory.ObjectCreationExpression(
+                            SyntaxFactory.IdentifierName(typeName))
+                                .WithArgumentList(
+                                    SyntaxFactory.ArgumentList(
+                                        SyntaxFactory.SeparatedList<ArgumentSyntax>()));
+                    }
+                }
+                else if (isExtraSupportedType)
+                {
+                    if (typeName.Contains('[') && typeName.Contains(']'))
+                    {
+                        return
+                            SyntaxFactory.ObjectCreationExpression(SyntaxFactory.IdentifierName(typeName))
+                                .WithInitializer(SyntaxFactory.InitializerExpression(
+                                    SyntaxKind.ArrayInitializerExpression));
+                    }
+                    else
+                    {
+                        //a list or dictionary
+                        return
+                            SyntaxFactory.ObjectCreationExpression(SyntaxFactory.IdentifierName(typeName))
+                                .WithArgumentList(SyntaxFactory.ArgumentList());
+                    }
                 }
                 else
                 {
-                    return SyntaxFactory.ObjectCreationExpression(
-                        SyntaxFactory.IdentifierName(typeName))
-                            .WithArgumentList(
-                                SyntaxFactory.ArgumentList(
-                                    SyntaxFactory.SeparatedList<ArgumentSyntax>()));
+                    return null;
                 }
             }
             else
             {
-                //an array -- int[], string[] --  (TODO: find a better way to do this)
-                if (typeName.Contains('[') && typeName.Contains(']'))
-                {
-                    return
-                        SyntaxFactory.ObjectCreationExpression(SyntaxFactory.IdentifierName(typeName))
-                            .WithInitializer(SyntaxFactory.InitializerExpression(
-                                SyntaxKind.ArrayInitializerExpression));
-                }
-                else
-                {
-                    //a list or dictionary
-                    return
-                        SyntaxFactory.ObjectCreationExpression(SyntaxFactory.IdentifierName(typeName))
-                            .WithArgumentList(SyntaxFactory.ArgumentList());
-                }
+                return null;
             }
         }
 

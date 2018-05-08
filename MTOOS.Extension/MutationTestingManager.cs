@@ -143,6 +143,7 @@ namespace MTOOS.Extension
                                     {
                                         if (testFixtureNode.Attributes["name"].Value.Contains(mi.MutantName))
                                         {
+                                            //if(liveMutants.Any(m=>m.MutantName == mi.MutantName))
                                             liveMutants.Add(new GeneratedMutant()
                                             {
                                                 Id = mi.Id,
@@ -154,6 +155,8 @@ namespace MTOOS.Extension
                                                 HaveDeletedStatement = mi.HaveDeletedStatement,
                                                 MutatorType = mi.MutatorType
                                             });
+
+                                            break;
                                         }
                                     }
                                 }

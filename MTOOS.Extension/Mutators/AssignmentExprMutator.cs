@@ -28,22 +28,23 @@ namespace MTOOS.Extension.Mutators
             var nodeSemanticModel = _semanticModel.Compilation.GetSemanticModel(node.SyntaxTree);
             var typeInfo = nodeSemanticModel.GetTypeInfo(node);
 
-            ExpressionSyntax replaceValueSyntaxNode;
-            if (typeInfo.Type.IsAbstract) // TODO: rethink this, might be abstract class, not interface
-            {
-                //get a type that implements that interface
-                string toBeResolvedType = 
-                    _randomTypeGenerator.GetTypeForInterface(typeInfo.Type.Name);
-                
-                replaceValueSyntaxNode = toBeResolvedType != null ?
-                _randomTypeGenerator.ResolveType(toBeResolvedType) : null;
-            }
-            else
-            {
-                replaceValueSyntaxNode =
-                _randomTypeGenerator.ResolveType(typeInfo.Type.ToString());
-            }
-            
+            ExpressionSyntax replaceValueSyntaxNode = _randomTypeGenerator.ResolveType(typeInfo.Type.ToString());
+
+            //if (typeInfo.Type.IsAbstract) // TODO: rethink this, might be abstract class, not interface
+            //{
+            //    //get a type that implements that interface
+            //    string toBeResolvedType = 
+            //        _randomTypeGenerator.GetTypeForInterface(typeInfo.Type.Name);
+
+            //    replaceValueSyntaxNode = toBeResolvedType != null ?
+            //        _randomTypeGenerator.ResolveType(toBeResolvedType) : null;
+            //}
+            //else
+            //{
+            //    replaceValueSyntaxNode =
+            //        _randomTypeGenerator.ResolveType(typeInfo.Type.ToString());
+            //}
+
             if (replaceValueSyntaxNode != null)
             {
                 var newAssignmentNode =
