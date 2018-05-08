@@ -41,7 +41,7 @@ namespace MTOOS.Extension.Mutators
             else
             {
                 replaceValueSyntaxNode =
-                _randomTypeGenerator.ResolveType(typeInfo.Type.Name);
+                _randomTypeGenerator.ResolveType(typeInfo.Type.ToString());
             }
             
             if (replaceValueSyntaxNode != null)

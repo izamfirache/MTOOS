@@ -74,16 +74,19 @@ namespace MTOOS.Extension
         {
             string solutionDir = Path.GetDirectoryName(dte.Solution.FullName);
             var packagesFolder = Path.Combine(solutionDir, "packages");
+
+            // TODO: avoid the version dependency!!
             var NUnitConsolePath = Path.Combine(packagesFolder,
-                "NUnit.ConsoleRunner.3.7.0\\tools\\nunit3-console.exe"); // TODO: avoid the version dependency!!
+                "NUnit.ConsoleRunner.3.7.0\\tools\\nunit3-console.exe"); 
 
             var nunitOutputFilePath = Path.GetDirectoryName(unitTestProjectMutationResult.OutputPath);
+            var arguments = string.Format(@"--work=""{0}"" ""{1}""", nunitOutputFilePath,
+                    unitTestProjectMutationResult.OutputPath);
 
             var processStartInfo = new ProcessStartInfo
             {
                 FileName = string.Format(@"""{0}""", NUnitConsolePath),
-                Arguments = string.Format(@"--work=""{0}"" ""{1}""", nunitOutputFilePath,
-                    unitTestProjectMutationResult.OutputPath),
+                Arguments = arguments,
                 UseShellExecute = false,
                 CreateNoWindow = true
             };
