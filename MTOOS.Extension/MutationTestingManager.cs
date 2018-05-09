@@ -21,7 +21,7 @@ namespace MTOOS.Extension
 {
     public class MutationTestingManager
     {
-        public List<GeneratedMutant> PerformMutationTestingOnProject(DTE2 dte, Project sourceCodeProject, 
+        public MutationAnalysisResult PerformMutationTestingOnProject(DTE2 dte, Project sourceCodeProject, 
             Project unitTestProject, List<string> options)
         {
             Stopwatch stopwatch = Stopwatch.StartNew();
@@ -52,7 +52,11 @@ namespace MTOOS.Extension
                 stopwatch.ElapsedMilliseconds.ToString(), sourceprojectMutationResult.GeneratedMutants.Count,
                 liveMutants.Count));
 
-            return liveMutants;
+            return new MutationAnalysisResult()
+            {
+                GeneratedMutants = sourceprojectMutationResult.GeneratedMutants,
+                LiveMutants = liveMutants
+            };
         }
 
         private UnitTestMutationResult MutateUnitTestProject(Solution2 solution, 

@@ -36,9 +36,9 @@
 
         private void CompareItem_Click(object sender, RoutedEventArgs e)
         {
-            if(_mutationAnalysisView.GeneratedMutantList.Count != 0)
+            if(_mutationAnalysisView.MutationAnalysisResult.LiveMutants.Count != 0)
             {
-                _compareView = new CompareView(_mutationAnalysisView.GeneratedMutantList);
+                _compareView = new CompareView(_mutationAnalysisView.MutationAnalysisResult.LiveMutants);
                 content.Content = _compareView;
             }
             else
@@ -46,11 +46,6 @@
                 _compareView = new CompareView(new List<GeneratedMutant>());
                 content.Content = _compareView;
             }
-        }
-
-        private void MenuItem_MouseRightButtonDown(object sender, System.Windows.Input.MouseButtonEventArgs e)
-        {
-
         }
     }
 }

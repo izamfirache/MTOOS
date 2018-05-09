@@ -6,6 +6,8 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
+using System.IO;
+using System.Linq;
 using System.Windows;
 using System.Windows.Controls;
 
@@ -17,8 +19,10 @@ namespace MTOOS.Extension.Views
     public partial class MutationAnalysisView : UserControl
     {
         public List<string> CheckedOptions;
-        public List<GeneratedMutant> GeneratedMutantList = new List<GeneratedMutant>();
+        public MutationAnalysisResult MutationAnalysisResult = new MutationAnalysisResult();
         private List<Project> SoulutionProjects;
+        private Project sourceCodeProject;
+        private Project unitTestProject;
         /// <summary>
         /// Initializes a new instance of the <see cref="MutantKillerWindowControl"/> class.
         /// </summary>
@@ -47,9 +51,7 @@ namespace MTOOS.Extension.Views
                 selectedProject.IsSelected = true;
                 projects.Add(selectedProject);
             }
-
-            Project sourceCodeProject;
-            Project unitTestProject;
+            
             if (projects.Count == 2)
             {
                 sourceCodeProject = GetSourceCodeProject(projects);
@@ -60,10 +62,11 @@ namespace MTOOS.Extension.Views
                     if (CheckedOptions.Count != 0)
                     {
                         MutationTestingManager mutationTestingManager = new MutationTestingManager();
-                        GeneratedMutantList = mutationTestingManager
+                        MutationAnalysisResult = mutationTestingManager
                             .PerformMutationTestingOnProject(dte, sourceCodeProject,
                                 unitTestProject, CheckedOptions);
-                        MutantList.ItemsSource = GeneratedMutantList;
+                        liveMutantsListBox.ItemsSource = MutationAnalysisResult.LiveMutants;
+                        generatedMutantsListBox.ItemsSource = MutationAnalysisResult.GeneratedMutants;
                     }
                     else
                     {
@@ -212,6 +215,44 @@ namespace MTOOS.Extension.Views
             VoidMethodCallMutator.IsChecked = true;
             ClassMemberAssignDel.IsChecked = true;
             VariableDeclarationMutator.IsChecked = true;
+        }
+
+        private void Button_Click_1(object sender, RoutedEventArgs e)
+        {
+            if (liveMutantsListBox.SelectedItems[0] != null)
+            {
+                var mutant = MutationAnalysisResult.LiveMutants
+                    .Where(m=>m.MutantName == (string)liveMutantsListBox.SelectedItems[0])
+                    .FirstOrDefault();
+                if(mutant != null)
+                {
+                    //get the unit test project
+                    //create folder there called MutationAnalysis
+                    //get the path to that folder
+                    var mutationAnalysisFolderPath = 
+                        Path.Combine(Path.GetDirectoryName(unitTestProject.Name),
+                        "MutationAnalysis");
+
+                    unitTestProject.ProjectItems.AddFolder("MutationAnalysis");
+                    unitTestProject.Save();
+
+                    //get the mutated and the original code 
+                    var mutantCode = mutant.MutatedCodeRoot.ToFullString();
+                    var originalCode = mutant.OriginalCodeRoot.ToFullString();
+
+                    //create two temporary classes with the code
+                    //called MutantCode and OriginalCode in the MutationAnalysis folder
+                    var mutantCodePath = Path.Combine(mutationAnalysisFolderPath, "MutantCode.cs");
+                    var originalCodePath = Path.Combine(mutationAnalysisFolderPath, "OriginalCode.cs");
+                    File.WriteAllText(mutantCodePath, mutantCode);
+                    File.WriteAllText(originalCodePath, originalCode);
+                }
+                else
+                {
+                    MessageBox.Show(string.Format("Mutant {0} not found.", 
+                        liveMutantsListBox.SelectedItems[0]));
+                }
+            }
         }
     }
 }

@@ -62,6 +62,7 @@
     <Compile Include="Models\ClassConstructor.cs" />
     <Compile Include="Models\GeneratedMutant.cs" />
     <Compile Include="Models\MethodParameter.cs" />
+    <Compile Include="Models\MutationAnalysisResult.cs" />
     <Compile Include="Models\ProjectPresentation.cs" />
     <Compile Include="Models\SourceCodeMutationResult.cs" />
     <Compile Include="Models\UnitTestMutationResult.cs" />

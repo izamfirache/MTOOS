@@ -64,6 +64,30 @@ namespace MTOOS.Extension.Mutators
                 var mutatedClassRoot = _classRootNode.ReplaceNode(node, newReturnStatemenNode);
                 _mutantCreator.CreateNewMutant(mutatedClassRoot, false);
             }
+            else
+            {
+                if (typeInfo.Type == null)
+                {
+                    return node;
+                }
+                if (typeInfo.Type != null && typeInfo.Type.Name == "T")
+                {
+                    return node;
+                }
+
+                if (typeInfo.Type.BaseType != null && typeInfo.Type.BaseType.Name == "Enum")
+                {
+                    return node;
+                }
+
+                // replace with return null;
+                var nullReturnStatementNode = SyntaxFactory.ReturnStatement(
+                        SyntaxFactory.LiteralExpression(SyntaxKind.NullLiteralExpression))
+                        .NormalizeWhitespace();
+
+                var mutatedClassRoot = _classRootNode.ReplaceNode(node, nullReturnStatementNode);
+                _mutantCreator.CreateNewMutant(mutatedClassRoot, false);
+            }
 
             return node;
         }

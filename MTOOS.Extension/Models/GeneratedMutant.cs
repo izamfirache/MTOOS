@@ -29,7 +29,7 @@ namespace MTOOS.Extension.Models
 
         public override string ToString()
         {
-            return MutantName + " - " + MutatorType;
+            return MutatorType + " - " + MutantName;
         }
     }
 }
