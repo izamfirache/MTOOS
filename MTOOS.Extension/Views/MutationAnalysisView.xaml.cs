@@ -23,6 +23,7 @@ namespace MTOOS.Extension.Views
         private List<Project> SoulutionProjects;
         private Project sourceCodeProject;
         private Project unitTestProject;
+        private int MutationAnalysisNumber = 0;
         /// <summary>
         /// Initializes a new instance of the <see cref="MutantKillerWindowControl"/> class.
         /// </summary>
@@ -217,35 +218,46 @@ namespace MTOOS.Extension.Views
             VariableDeclarationMutator.IsChecked = true;
         }
 
+        private void Button_Click_3(object sender, RoutedEventArgs e)
+        {
+            if (generatedMutantsListBox.SelectedItems[0] != null)
+            {
+                var selectedMutant = (GeneratedMutant)generatedMutantsListBox.SelectedItems[0];
+                var selectedMutantName = selectedMutant.MutantName;
+
+                var mutant = MutationAnalysisResult.GeneratedMutants
+                    .Where(m => m.MutantName == selectedMutantName)
+                    .FirstOrDefault();
+
+                if (mutant != null)
+                {
+                    CompareMutantWithOriginalCode(mutant);
+                }
+                else
+                {
+                    MessageBox.Show(string.Format("Mutant {0} not found.",
+                        generatedMutantsListBox.SelectedItems[0]));
+                }
+            }
+            else
+            {
+                MessageBox.Show("Please select a mutant from the generated mutants list.");
+            }
+        }
         private void Button_Click_1(object sender, RoutedEventArgs e)
         {
             if (liveMutantsListBox.SelectedItems[0] != null)
             {
+                var selectedMutant = (GeneratedMutant)liveMutantsListBox.SelectedItems[0];
+                var selectedMutantName = selectedMutant.MutantName;
+
                 var mutant = MutationAnalysisResult.LiveMutants
-                    .Where(m=>m.MutantName == (string)liveMutantsListBox.SelectedItems[0])
+                    .Where(m=>m.MutantName == selectedMutantName)
                     .FirstOrDefault();
+
                 if(mutant != null)
                 {
-                    //get the unit test project
-                    //create folder there called MutationAnalysis
-                    //get the path to that folder
-                    var mutationAnalysisFolderPath = 
-                        Path.Combine(Path.GetDirectoryName(unitTestProject.Name),
-                        "MutationAnalysis");
-
-                    unitTestProject.ProjectItems.AddFolder("MutationAnalysis");
-                    unitTestProject.Save();
-
-                    //get the mutated and the original code 
-                    var mutantCode = mutant.MutatedCodeRoot.ToFullString();
-                    var originalCode = mutant.OriginalCodeRoot.ToFullString();
-
-                    //create two temporary classes with the code
-                    //called MutantCode and OriginalCode in the MutationAnalysis folder
-                    var mutantCodePath = Path.Combine(mutationAnalysisFolderPath, "MutantCode.cs");
-                    var originalCodePath = Path.Combine(mutationAnalysisFolderPath, "OriginalCode.cs");
-                    File.WriteAllText(mutantCodePath, mutantCode);
-                    File.WriteAllText(originalCodePath, originalCode);
+                    CompareMutantWithOriginalCode(mutant);
                 }
                 else
                 {
@@ -253,6 +265,146 @@ namespace MTOOS.Extension.Views
                         liveMutantsListBox.SelectedItems[0]));
                 }
             }
+            else
+            {
+                MessageBox.Show("Please select a mutant from the live mutants list.");
+            }
+        }
+
+        private void CompareMutantWithOriginalCode(GeneratedMutant mutant)
+        {
+            var dte = GetActiveIDE();
+
+            if (unitTestProject != null && sourceCodeProject != null)
+            {
+                //get the unit test project
+                //create folder there called MutationAnalysis
+                //get the path to that folder
+                var mutationAnalysisFolderPath =
+                    Path.Combine(Path.GetDirectoryName(unitTestProject.FullName),
+                    "MutationAnalysis");
+
+                if (!Directory.Exists(mutationAnalysisFolderPath))
+                {
+                    unitTestProject.ProjectItems.AddFolder("MutationAnalysis");
+                    unitTestProject.Save();
+                }
+
+                //get the mutated and the original code 
+                var mutantCode = mutant.MutatedCode;
+                var originalCode = mutant.OriginalProgramCode;
+
+                MutationAnalysisNumber = MutationAnalysisNumber + 1;
+
+                //create two temporary classes with the code
+                //called MutantCode and OriginalCode in the MutationAnalysis folder
+                var mutantCodePath = Path.Combine(mutationAnalysisFolderPath,
+                    string.Format("MutantCode{0}.txt", MutationAnalysisNumber));
+                var originalCodePath = Path.Combine(mutationAnalysisFolderPath,
+                    string.Format("OriginalCode{0}.txt", MutationAnalysisNumber));
+
+                File.WriteAllText(mutantCodePath, mutantCode);
+                File.WriteAllText(originalCodePath, originalCode);
+
+                unitTestProject.ProjectItems.AddFromFile(mutantCodePath);
+                unitTestProject.ProjectItems.AddFromFile(originalCodePath);
+                unitTestProject.Save();
+
+                CompareFiles(dte, mutantCodePath, originalCodePath);
+            }
+        }
+
+        private void CompareFiles(DTE2 dte, string mutantCodePath, string originalCodePath)
+        {
+            if (!string.IsNullOrEmpty(mutantCodePath) && !string.IsNullOrEmpty(originalCodePath))
+            {
+                dte.ExecuteCommand("Tools.DiffFiles", $"\"{mutantCodePath}\" \"{originalCodePath}\"");
+            }
+        }
+
+        private void Button_Click_2(object sender, RoutedEventArgs e)
+        {
+            var dte = GetActiveIDE();
+            //dte.ExecuteCommand("CloseAll");
+
+            if (unitTestProject == null && sourceCodeProject == null)
+            {
+                var projects = new List<ProjectPresentation>();
+                foreach (var item in solutionProjectList.SelectedItems)
+                {
+                    var selectedProject = (ProjectPresentation)item;
+                    selectedProject.IsSelected = true;
+                    projects.Add(selectedProject);
+                }
+                sourceCodeProject = GetSourceCodeProject(projects);
+                unitTestProject = GetUnitTestProject(projects);
+            }
+
+            if (unitTestProject != null && sourceCodeProject != null)
+            {
+                //delete the mutated source code class
+                foreach (ProjectItem item in sourceCodeProject.ProjectItems)
+                {
+                    var itemName = item.Name;
+                    if (itemName == "SourceCodeMutants.cs")
+                    {
+                        item.Delete();
+                        break;
+                    }
+                }
+                sourceCodeProject.Save();
+
+                //delete mutated unit test project
+                foreach (ProjectItem item in unitTestProject.ProjectItems)
+                {
+                    var itemName = item.Name;
+                    if (itemName == "UnitTestMutants.cs")
+                    {
+                        item.Delete();
+                    }
+
+                    //delete mutation analysis folder
+                    if (itemName == "MutationAnalysis")
+                    {
+                        MutationAnalysisNumber = 0;
+                        item.Delete();
+                    }
+                }
+                unitTestProject.Save();
+
+                //recompile projects
+                SolutionBuild2 solutionBuild2 = (SolutionBuild2)unitTestProject.DTE.Solution.SolutionBuild;
+                solutionBuild2.BuildProject(solutionBuild2.ActiveConfiguration.Name,
+                    unitTestProject.UniqueName, true);
+                bool unitTestCompiledOK = (solutionBuild2.LastBuildInfo == 0);
+
+                SolutionBuild2 solutionBuild = (SolutionBuild2)sourceCodeProject.DTE.Solution.SolutionBuild;
+                solutionBuild.BuildProject(solutionBuild.ActiveConfiguration.Name,
+                    sourceCodeProject.UniqueName, true);
+                bool sourceCodeCompiledOK = (solutionBuild.LastBuildInfo == 0);
+
+                if (unitTestCompiledOK && sourceCodeCompiledOK)
+                {
+                    MessageBox.Show("MTOOS deletion done! No Errors!");
+                }
+                else
+                {
+                    MessageBox.Show("Error while MTOOS deletion!");
+                }
+            }
+            else
+            {
+                MessageBox.Show("Select the source code and the unit test project!");
+            }
+        }
+
+        private void Button_Click_4(object sender, RoutedEventArgs e)
+        {
+            MutationAnalysisResult.GeneratedMutants = new List<GeneratedMutant>();
+            MutationAnalysisResult.LiveMutants = new List<GeneratedMutant>();
+
+            liveMutantsListBox.ItemsSource = MutationAnalysisResult.LiveMutants;
+            generatedMutantsListBox.ItemsSource = MutationAnalysisResult.GeneratedMutants;
         }
     }
 }
