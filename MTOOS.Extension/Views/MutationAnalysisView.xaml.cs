@@ -68,6 +68,15 @@ namespace MTOOS.Extension.Views
                                 unitTestProject, CheckedOptions);
                         liveMutantsListBox.ItemsSource = MutationAnalysisResult.LiveMutants;
                         generatedMutantsListBox.ItemsSource = MutationAnalysisResult.GeneratedMutants;
+                        decimal totalNrOfMutants = MutationAnalysisResult.GeneratedMutants.Count;
+                        decimal liveMutants = MutationAnalysisResult.LiveMutants.Count;
+                        decimal killedMutants = totalNrOfMutants - liveMutants;
+                        decimal mutationScoreValue = killedMutants / totalNrOfMutants;
+
+                        mutationScore.Text = mutationScoreValue.ToString("N2");
+                        totalNrOfMutantsTextBlock.Text = totalNrOfMutants.ToString("N1");
+                        liveMutantsTextBlock.Text = liveMutants.ToString("N1");
+                        killedMutantsTextBlock.Text = killedMutants.ToString("N1");
                     }
                     else
                     {

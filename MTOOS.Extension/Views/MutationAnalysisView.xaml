@@ -7,11 +7,11 @@
              Background="LightGray"
              Foreground="White"
              mc:Ignorable="d"
-             Name="MutationAnalysis" Width="1043.2" Height="658.4">
-    <Grid x:Name="grdMutationAnalysist" Margin="87,110,20.2,23.4">
+             Name="MutationAnalysis" Width="1079.2" Height="756">
+    <Grid x:Name="grdMutationAnalysist" Margin="81,102,20.2,22.2">
         <Grid.RowDefinitions>
-            <RowDefinition Height="34*"/>
             <RowDefinition/>
+            <RowDefinition Height="Auto"/>
         </Grid.RowDefinitions>
         <Grid.ColumnDefinitions>
             <ColumnDefinition Width="110*"/>
@@ -21,7 +21,7 @@
             <ColumnDefinition Width="201*"/>
             <ColumnDefinition Width="322*"/>
         </Grid.ColumnDefinitions>
-        <Button Content="Start a new Mutation Testing session" HorizontalAlignment="Left" Margin="161.8,501,0,-10" VerticalAlignment="Top" Width="317" RenderTransformOrigin="0.509,2.213" Height="34" Grid.Column="2" Click="StartMutationTesting" Grid.ColumnSpan="4" Grid.RowSpan="2"/>
+        <Button Content="Start a new Mutation Testing session" HorizontalAlignment="Left" Margin="161.4,501,0,0" VerticalAlignment="Top" Width="317" RenderTransformOrigin="0.509,2.213" Height="23" Grid.Column="2" Click="StartMutationTesting" Grid.ColumnSpan="3"/>
         <Label Content="Mutation Testing for Object Oriented Software - MTOOS" HorizontalAlignment="Left" Margin="47.8,-95,0,0" VerticalAlignment="Top" Width="507" Grid.ColumnSpan="4" FontSize="20" Height="37" Grid.Column="2"/>
         <CheckBox x:Name="BoundaryOpMutator" Content="1. Boundary Operator Mutator - BOM" HorizontalAlignment="Left" Margin="-59,-17,0,0" VerticalAlignment="Top" Grid.ColumnSpan="3" Width="246" Height="15"/>
         <CheckBox x:Name="RelationalAndEqualityOpMutator" 
@@ -45,9 +45,9 @@
         </ListView>
         <ListView x:Name="solutionProjectList" 
                           HorizontalAlignment="Left" 
-                          Height="298" Margin="-59,198,0,0" 
-                          VerticalAlignment="Top" Width="331" 
-                          Grid.ColumnSpan="3">
+                          Height="254" Margin="-59,164,0,0" 
+                          VerticalAlignment="Top" Width="194" 
+                          Grid.ColumnSpan="2">
             <ListView.View>
                 <GridView>
                     <GridView.Columns>
@@ -93,7 +93,6 @@
             Content="9. Local Variable Declaration With Initalization Mutator - LVDM" 
             HorizontalAlignment="Left" Margin="-59,144,0,0" 
             VerticalAlignment="Top" Grid.ColumnSpan="3" Width="355" Height="15"/>
-        <Button Content="Check All" HorizontalAlignment="Left" Margin="-59,164,0,0" VerticalAlignment="Top" Width="77" Click="Button_Click" RenderTransformOrigin="0.257,0.521" Height="20"/>
         <ListView 
             x:Name="liveMutantsListBox"
             Grid.Column="5" 
@@ -109,8 +108,16 @@
             </ListView.View>
         </ListView>
         <Button Content="Analyze the live mutant" Grid.Column="5" HorizontalAlignment="Left" Margin="10.4,475,-6,0" VerticalAlignment="Top" Width="318" Height="21" Click="Button_Click_1"/>
-        <Button Content="MTOOS Cleaner" HorizontalAlignment="Left" Margin="-57,498,0,0" VerticalAlignment="Top" Width="167" Height="24" Click="Button_Click_2" Grid.RowSpan="2"/>
+        <Button Content="MTOOS Cleaner" HorizontalAlignment="Left" Margin="29.8,164,0,0" VerticalAlignment="Top" Width="151" Height="23" Click="Button_Click_2" RenderTransformOrigin="0.096,0.684" Grid.Column="1" Grid.ColumnSpan="2"/>
         <Button Content="Analyze the generated and killed  mutant" Grid.Column="2" HorizontalAlignment="Left" Margin="161.8,475,0,0" VerticalAlignment="Top" Width="317" Height="21" Grid.ColumnSpan="4" Click="Button_Click_3"/>
-        <Button Content="Clear mutant lists" Grid.Column="5" HorizontalAlignment="Left" Margin="10.4,501,-6,-10.2" Width="318" Grid.RowSpan="2" Click="Button_Click_4"/>
+        <Button Content="Clear mutant lists" Grid.Column="5" HorizontalAlignment="Left" Margin="10.2,501,0,108" Width="318" Click="Button_Click_4"/>
+        <Label Content="MUTATION SCORE =" HorizontalAlignment="Left" Margin="-54,510,0,0" VerticalAlignment="Top" Height="32" Width="122"/>
+        <TextBlock x:Name="mutationScore" HorizontalAlignment="Left" Margin="96,504,0,0" TextWrapping="Wrap" VerticalAlignment="Top" Height="42" Width="39" Background="{DynamicResource {x:Static SystemColors.WindowBrushKey}}" RenderTransformOrigin="0.263,-0.143" Foreground="{DynamicResource {x:Static SystemColors.ActiveCaptionTextBrushKey}}" Grid.ColumnSpan="2" FontSize="15" FontStyle="Italic" FontWeight="Bold"/>
+        <Label Content="KILLED MUTANTS = " HorizontalAlignment="Left" Margin="-54,474,0,0" VerticalAlignment="Top" Height="32" Width="115" RenderTransformOrigin="0.422,-0.869"/>
+        <Label Content="LIVE MUTANTS =" HorizontalAlignment="Left" Margin="-53,448,0,0" VerticalAlignment="Top" Height="32" Width="111"/>
+        <Label Content="TOTAL NR. OF MUTANTS = " HorizontalAlignment="Left" Margin="-54,423,0,0" VerticalAlignment="Top" Height="32" Width="159"/>
+        <TextBlock x:Name="killedMutantsTextBlock" HorizontalAlignment="Left" Margin="96,479,0,0" TextWrapping="Wrap" VerticalAlignment="Top" Height="21" Width="38" Background="{DynamicResource {x:Static SystemColors.WindowBrushKey}}" RenderTransformOrigin="0.263,-0.143" Foreground="{DynamicResource {x:Static SystemColors.ActiveCaptionTextBrushKey}}" Grid.ColumnSpan="2"/>
+        <TextBlock x:Name="liveMutantsTextBlock" HorizontalAlignment="Left" Margin="96,453,0,0" TextWrapping="Wrap" VerticalAlignment="Top" Height="21" Width="38" Background="{DynamicResource {x:Static SystemColors.WindowBrushKey}}" RenderTransformOrigin="0.263,-0.143" Foreground="{DynamicResource {x:Static SystemColors.ActiveCaptionTextBrushKey}}" Grid.ColumnSpan="2"/>
+        <TextBlock x:Name="totalNrOfMutantsTextBlock" HorizontalAlignment="Left" Margin="96,427,0,0" TextWrapping="Wrap" VerticalAlignment="Top" Height="21" Width="38" Background="{DynamicResource {x:Static SystemColors.WindowBrushKey}}" RenderTransformOrigin="0.263,-0.143" Foreground="{DynamicResource {x:Static SystemColors.ActiveCaptionTextBrushKey}}" Grid.ColumnSpan="2"/>
     </Grid>
 </UserControl>
