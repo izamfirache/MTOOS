@@ -6,6 +6,7 @@ Visual Studio Extension which applies the *Mutation Testing* technique on an exi
 
 The general purpose of this tool is to be an alternative for the classical unit test code coverage tools, which function by the idea that if a pice of code is executed during the execution of a unit test, that code area is considered to be tested (covered). That is not always the case, one can obtain a high unit test code coverage but not testing much about the code. This tool modifies key areas in your code and see if those modifications (mutations) are cought by the test suite.
 
+# Implementation details
 The tool generates mutants (modified versions of the source code), then run the unit tests (for that modified/mutated area in the code) over those mutants. 
    - If at least one unit test is failing when the unit tests are executed over a mutant, that mutant is said to be *KILLED*, meaning that area in the source code is properly tested by at least one unit test. 
    - If no unit test is failing, that mutant is said to be *LIVE*, meaning that area in the code is not properly covered in a unit test.
