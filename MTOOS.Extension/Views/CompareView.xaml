@@ -4,17 +4,17 @@
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
              xmlns:vsshell="clr-namespace:Microsoft.VisualStudio.Shell;assembly=Microsoft.VisualStudio.Shell.15.0"
-             Background="{DynamicResource {x:Static SystemColors.ActiveCaptionBrushKey}}"
-             Foreground="{DynamicResource {x:Static vsshell:VsBrushes.WindowTextKey}}"
+             Background="LightGray"
+             Foreground="White"
              mc:Ignorable="d"
              d:DesignHeight="550"
              Name="CompareViewName" Width="1100">
     <Grid x:Name="grdCompare" Margin="0,0,0,0.4">
         <ListView x:Name="liveMutants" 
                   HorizontalAlignment="Left" 
-                  Height="333" Margin="818,45,0,0" 
+                  Height="471" Margin="818,45,0,0" 
                   VerticalAlignment="Top"  
-                  Width="217"
+                  Width="272"
                   PreviewMouseLeftButtonUp="LiveMutantslListView_Click">
             <ListView.View>
                 <GridView>

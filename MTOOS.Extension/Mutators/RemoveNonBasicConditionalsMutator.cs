@@ -37,19 +37,22 @@ namespace MTOOS.Extension.Mutators
 
             if (!(node.Condition is BinaryExpressionSyntax))
             {
-                var trueLiteralExpression = SyntaxFactory.LiteralExpression(SyntaxKind.TrueLiteralExpression);
-                var falseLiteralExpression = SyntaxFactory.LiteralExpression(SyntaxKind.FalseLiteralExpression);
+                if (!node.Condition.ToFullString().Contains("out"))
+                {
+                    var trueLiteralExpression = SyntaxFactory.LiteralExpression(SyntaxKind.TrueLiteralExpression);
+                    var falseLiteralExpression = SyntaxFactory.LiteralExpression(SyntaxKind.FalseLiteralExpression);
 
-                var trueConditionNode = node.ReplaceNode(node.Condition, trueLiteralExpression);
-                var falseConditionNode = node.ReplaceNode(node.Condition, falseLiteralExpression);
+                    var trueConditionNode = node.ReplaceNode(node.Condition, trueLiteralExpression);
+                    var falseConditionNode = node.ReplaceNode(node.Condition, falseLiteralExpression);
 
-                var classMutatedWithTrueCondition =
-                    _classRootNode.ReplaceNode(node, trueConditionNode);
-                _mutantCreator.CreateNewMutant(classMutatedWithTrueCondition, false);
+                    var classMutatedWithTrueCondition =
+                        _classRootNode.ReplaceNode(node, trueConditionNode);
+                    _mutantCreator.CreateNewMutant(classMutatedWithTrueCondition, false);
 
-                var classMutatedWithFalseCondition =
-                    _classRootNode.ReplaceNode(node, falseConditionNode);
-                _mutantCreator.CreateNewMutant(classMutatedWithFalseCondition, false);
+                    var classMutatedWithFalseCondition =
+                        _classRootNode.ReplaceNode(node, falseConditionNode);
+                    _mutantCreator.CreateNewMutant(classMutatedWithFalseCondition, false);
+                }
             }
 
             return node;

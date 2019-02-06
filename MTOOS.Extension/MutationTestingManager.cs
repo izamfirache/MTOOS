@@ -21,7 +21,7 @@ namespace MTOOS.Extension
 {
     public class MutationTestingManager
     {
-        public List<GeneratedMutant> PerformMutationTestingOnProject(DTE2 dte, Project sourceCodeProject, 
+        public MutationAnalysisResult PerformMutationTestingOnProject(DTE2 dte, Project sourceCodeProject, 
             Project unitTestProject, List<string> options)
         {
             Stopwatch stopwatch = Stopwatch.StartNew();
@@ -31,27 +31,32 @@ namespace MTOOS.Extension
              var sourceprojectMutationResult = 
                 sourceCodeMutator.PerformMutationAnalysisOnSourceCodeProject(sourceCodeProject, options);
 
-            //var liveMutants = new List<GeneratedMutant>();
-            //if (sourceprojectMutationResult.GeneratedMutants.Count != 0)
-            //{
-            //    var unitTestProjectMutation =
-            //        MutateUnitTestProject(solution, sourceprojectMutationResult, 
-            //        unitTestProject, sourceCodeProject);
+            var liveMutants = new List<GeneratedMutant>();
+            if (sourceprojectMutationResult.GeneratedMutants.Count != 0)
+            {
+                var unitTestProjectMutation =
+                    MutateUnitTestProject(solution, sourceprojectMutationResult,
+                        unitTestProject, sourceCodeProject);
 
-            //    liveMutants = RunTheMutatedUnitTestSuiteUsingNUnitConsole
-            //        (unitTestProjectMutation, dte, sourceprojectMutationResult.GeneratedMutants);
-            //}
-            //else
-            //{
-            //    MessageBox.Show("Error at source code project mutation");
-            //}
+                liveMutants = RunTheMutatedUnitTestSuiteUsingNUnitConsole
+                    (unitTestProjectMutation, dte, sourceprojectMutationResult.GeneratedMutants);
+            }
+            else
+            {
+                MessageBox.Show("Error at source code project mutation");
+            }
 
             stopwatch.Stop();
-            MessageBox.Show("Done. Execution time: " + stopwatch.ElapsedMilliseconds.ToString() + " ms.");
+            MessageBox.Show(string.Format("Done. Execution time: {0} ms. {1} mutants generated. " +
+                "{2} live mutants.",
+                stopwatch.ElapsedMilliseconds.ToString(), sourceprojectMutationResult.GeneratedMutants.Count,
+                liveMutants.Count));
 
-            //return liveMutants;
-
-            return sourceprojectMutationResult.GeneratedMutants;
+            return new MutationAnalysisResult()
+            {
+                GeneratedMutants = sourceprojectMutationResult.GeneratedMutants,
+                LiveMutants = liveMutants
+            };
         }
 
         private UnitTestMutationResult MutateUnitTestProject(Solution2 solution, 
@@ -63,13 +68,6 @@ namespace MTOOS.Extension
                 unitTestsMutator.PerformMutationForUnitTestProject(unitTestProject, sourceCodeMutationResult, 
                 sourceCodeProject);
 
-            unitTestProject.ProjectItems.AddFromFile(unitTestsMutator.MutatedUnitTestCodePath);
-            unitTestProject.Save();
-
-            SolutionBuild2 solutionBuild2 = (SolutionBuild2)unitTestProject.DTE.Solution.SolutionBuild;
-            solutionBuild2.BuildProject(solutionBuild2.ActiveConfiguration.Name,
-                unitTestProject.UniqueName, true);
-
             return unitTestMutationResult;
         }
 
@@ -80,16 +78,19 @@ namespace MTOOS.Extension
         {
             string solutionDir = Path.GetDirectoryName(dte.Solution.FullName);
             var packagesFolder = Path.Combine(solutionDir, "packages");
+
+            // TODO: avoid the version dependency!!
             var NUnitConsolePath = Path.Combine(packagesFolder,
-                "NUnit.ConsoleRunner.3.8.0\\tools\\nunit3-console.exe"); // TODO: avoid the version dependency!!
+                "NUnit.ConsoleRunner.3.7.0\\tools\\nunit3-console.exe"); 
 
             var nunitOutputFilePath = Path.GetDirectoryName(unitTestProjectMutationResult.OutputPath);
+            var arguments = string.Format(@"--work=""{0}"" ""{1}""", nunitOutputFilePath,
+                    unitTestProjectMutationResult.OutputPath);
 
             var processStartInfo = new ProcessStartInfo
             {
                 FileName = string.Format(@"""{0}""", NUnitConsolePath),
-                Arguments = string.Format(@"--work=""{0}"" ""{1}""", nunitOutputFilePath,
-                    unitTestProjectMutationResult.OutputPath),
+                Arguments = arguments,
                 UseShellExecute = false,
                 CreateNoWindow = true
             };
@@ -107,9 +108,9 @@ namespace MTOOS.Extension
                 MessageBox.Show(e.Message);
             }
 
-            var NUnitResultXmlFilePath = Path.Combine(Path.GetDirectoryName(
-                        Path.GetDirectoryName(unitTestProjectMutationResult.OutputPath)),
-                        @"Debug\\TestResult.xml");
+            var NUnitResultXmlFilePath = Path.Combine(
+                Path.GetDirectoryName(unitTestProjectMutationResult.OutputPath),
+                        @"TestResult.xml");
 
             List<GeneratedMutant> liveMutants = new List<GeneratedMutant>();
             if (File.Exists(NUnitResultXmlFilePath))
@@ -146,6 +147,7 @@ namespace MTOOS.Extension
                                     {
                                         if (testFixtureNode.Attributes["name"].Value.Contains(mi.MutantName))
                                         {
+                                            //if(liveMutants.Any(m=>m.MutantName == mi.MutantName))
                                             liveMutants.Add(new GeneratedMutant()
                                             {
                                                 Id = mi.Id,
@@ -157,6 +159,8 @@ namespace MTOOS.Extension
                                                 HaveDeletedStatement = mi.HaveDeletedStatement,
                                                 MutatorType = mi.MutatorType
                                             });
+
+                                            break;
                                         }
                                     }
                                 }

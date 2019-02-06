@@ -118,5 +118,61 @@ namespace MTOOS.Extension.Mutators
 
             return node;
         }
+
+        public override SyntaxNode VisitPostfixUnaryExpression(PostfixUnaryExpressionSyntax node)
+        {
+            SyntaxToken postFixUnaryOperator = node.OperatorToken;
+            SyntaxToken newToken = SyntaxFactory.Token(SyntaxKind.None);
+
+            // ++ becomes --
+            if (postFixUnaryOperator.IsKind(SyntaxKind.PlusPlusToken))
+            {
+                newToken = SyntaxFactory.Token(SyntaxKind.MinusMinusToken)
+                    .WithTrailingTrivia(SyntaxFactory.Space);
+            }
+
+            // -- becomes ++
+            if (postFixUnaryOperator.IsKind(SyntaxKind.MinusMinusToken))
+            {
+                newToken = SyntaxFactory.Token(SyntaxKind.PlusPlusToken)
+                    .WithTrailingTrivia(SyntaxFactory.Space);
+            }
+
+            if (!newToken.IsKind(SyntaxKind.None))
+            {
+                var mutatedBinaryExressionNode = node.ReplaceToken(postFixUnaryOperator, newToken);
+                var mutatedClassRoot = _classRootNode.ReplaceNode(node, mutatedBinaryExressionNode);
+                _mutantCreator.CreateNewMutant(mutatedClassRoot, false);
+            }
+            return node;
+        }
+
+        public override SyntaxNode VisitPrefixUnaryExpression(PrefixUnaryExpressionSyntax node)
+        {
+            SyntaxToken preFixUnaryOperator = node.OperatorToken;
+            SyntaxToken newToken = SyntaxFactory.Token(SyntaxKind.None);
+
+            // ++ becomes --
+            if (preFixUnaryOperator.IsKind(SyntaxKind.PlusPlusToken))
+            {
+                newToken = SyntaxFactory.Token(SyntaxKind.MinusMinusToken)
+                    .WithTrailingTrivia(SyntaxFactory.Space);
+            }
+
+            // -- becomes ++
+            if (preFixUnaryOperator.IsKind(SyntaxKind.MinusMinusToken))
+            {
+                newToken = SyntaxFactory.Token(SyntaxKind.PlusPlusToken)
+                    .WithTrailingTrivia(SyntaxFactory.Space);
+            }
+
+            if (!newToken.IsKind(SyntaxKind.None))
+            {
+                var mutatedBinaryExressionNode = node.ReplaceToken(preFixUnaryOperator, newToken);
+                var mutatedClassRoot = _classRootNode.ReplaceNode(node, mutatedBinaryExressionNode);
+                _mutantCreator.CreateNewMutant(mutatedClassRoot, false);
+            }
+            return node;
+        }
     }
 }

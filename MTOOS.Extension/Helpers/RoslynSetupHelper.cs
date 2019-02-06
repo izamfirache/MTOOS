@@ -1,5 +1,6 @@
 ﻿using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.MSBuild;
+using MTOOS.Extension.Models;
 using System;
 using System.Collections.Generic;
 using System.Linq;

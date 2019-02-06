@@ -1,4 +1,5 @@
-﻿using EnvDTE80;
+﻿using EnvDTE;
+using EnvDTE80;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
@@ -23,7 +24,9 @@ namespace MTOOS.Extension.MutationAnalysis
         private Solution2 _currentSolution;
         private RoslynSetupHelper _roslynSetupHelper;
         private EnvDteHelper _envDteHelper;
-        public string MutatedUnitTestCodePath;
+        public string SourceCodeMutantsCodePath = "";
+        public string UnitTestsMutantsCodePath = "";
+        private List<UsingDirectiveSyntax> Usings = new List<UsingDirectiveSyntax>();
         public UnitTestSuiteMutator(Solution2 currentSolution)
         {
             _currentSolution = currentSolution;
@@ -44,89 +47,164 @@ namespace MTOOS.Extension.MutationAnalysis
             List<GeneratedMutant> generatedUnitTestMutants = 
                 GenerateMutantsForUnitTestProject(projectAssembly, sourceCodeMutationResult.GeneratedMutants);
 
-            Compilation finalCompilation = GetMutatedCompilation(generatedUnitTestMutants, unitTestProject,
-                sourceCodeMutationResult);
+            var isMutatioAnalysisCompleted = GetMutatedCompilation(generatedUnitTestMutants, unitTestProject,
+                sourceCodeProject, sourceCodeMutationResult, projectToAnalyze.OutputFilePath);
 
-            return new UnitTestMutationResult()
+            if (isMutatioAnalysisCompleted)
             {
-                GeneratedUnitTestMutants = generatedUnitTestMutants,
-                OutputPath = projectToAnalyze.OutputFilePath
-            };
+                return new UnitTestMutationResult()
+                {
+                    GeneratedUnitTestMutants = generatedUnitTestMutants,
+                    OutputPath = projectToAnalyze.OutputFilePath
+                };
+            }
+            else
+            {
+                throw new Exception("Error at mutation analysis step.");
+            }
         }
 
-        private Compilation GetMutatedCompilation(
+        private bool GetMutatedCompilation(
             List<GeneratedMutant> generatedUnitTestMutants,
             EnvDTE.Project unitTestProject,
-            SourceCodeMutationResult sourceCodeMutationResult)
+            EnvDTE.Project sourceCodeproject,
+            SourceCodeMutationResult sourceCodeMutationResult,
+            string unitTestProjectoutputPath)
         {
-            var options = new CSharpCompilationOptions(
-                        OutputKind.DynamicallyLinkedLibrary,
-                        optimizationLevel: OptimizationLevel.Debug,
-                        allowUnsafe: true);
+            bool sourceCodeMutation = false;
+            bool unitTestCodeMutation = false;
+            
+            sourceCodeMutation = 
+                AddMutationAnalysisToSourceCodeProject(sourceCodeMutationResult, sourceCodeproject);
+            
+            if (sourceCodeMutation)
+            {
+                //MessageBox.Show("Source code project compiled after mutation.");
 
-            var unitTestProjectRefereces = _envDteHelper.GetEnvDteProjectReferences(unitTestProject);
-            var _references = new List<MetadataReference>
-            {
-                MetadataReference.CreateFromFile(typeof(System.Reflection.Binder).GetTypeInfo().Assembly.Location),
-                MetadataReference.CreateFromFile(sourceCodeMutationResult.OutputPath)
-            };
-            foreach (string referencePath in unitTestProjectRefereces)
-            {
-                _references.Add(MetadataReference.CreateFromFile(referencePath));
+                unitTestCodeMutation =
+                    AddMutationAnalysisToUnitTestProject(generatedUnitTestMutants, unitTestProject);
+
+                //if (unitTestCodeMutation)
+                //{
+                //    MessageBox.Show("Unit test project compiled after mutation.");
+                //}
             }
 
-            var compilationUnit = SyntaxFactory.CompilationUnit().WithUsings(
-                    SyntaxFactory.List(
-                    new UsingDirectiveSyntax[]{
-                        SyntaxFactory.UsingDirective(
-                            SyntaxFactory.QualifiedName(
-                                SyntaxFactory.IdentifierName("NUnit"),
-                                SyntaxFactory.IdentifierName("Framework")))}))
+            if(sourceCodeMutation && unitTestCodeMutation)
+            {
+                return true;
+            }
+            else
+            {
+                return false;
+            }
+        }
+
+        private bool AddMutationAnalysisToUnitTestProject(List<GeneratedMutant> generatedUnitTestMutants,
+            EnvDTE.Project unitTestProject)
+        {
+            var selfUsing = SyntaxFactory.UsingDirective(
+                    SyntaxFactory.IdentifierName("SourceCodeProjectMutants"));
+
+            selfUsing = selfUsing.WithUsingKeyword(
+                                selfUsing.UsingKeyword.WithTrailingTrivia(
+                                    SyntaxFactory.Whitespace(" ")));
+            Usings.Add(selfUsing);
+
+            var unitTestCompilationUnit = SyntaxFactory.CompilationUnit()
+            .WithUsings(SyntaxFactory.List(Usings.ToArray()))
+            .WithMembers(
+                SyntaxFactory.SingletonList<MemberDeclarationSyntax>(
+                    SyntaxFactory.NamespaceDeclaration(
+                        SyntaxFactory.IdentifierName("UnitTestProjectMutants"))
+                    .WithMembers(
+                        SyntaxFactory.SingletonList<MemberDeclarationSyntax>(
+                            SyntaxFactory.ClassDeclaration("FirstUnitTestMutant")
+                            .WithModifiers(
+                                SyntaxFactory.TokenList(
+                                    SyntaxFactory.Token(SyntaxKind.PublicKeyword)))))))
+            .NormalizeWhitespace();
+
+            var unitTestCompilationUnitRoot = unitTestCompilationUnit.SyntaxTree.GetRoot() as CompilationUnitSyntax;
+
+            var unitTestMutantsNameSpace =
+                unitTestCompilationUnitRoot.DescendantNodes().OfType<NamespaceDeclarationSyntax>().First();
+
+            var firstUnitTestMutant =
+                unitTestMutantsNameSpace.DescendantNodes().OfType<ClassDeclarationSyntax>().First();
+
+            var unitTestCompilationUnitSyntaxTree = unitTestCompilationUnitRoot
+                .InsertNodesAfter(firstUnitTestMutant,
+                generatedUnitTestMutants.Select(p => p.MutatedCodeRoot));
+
+            var unitTestTree = CSharpSyntaxTree.ParseText(unitTestCompilationUnitSyntaxTree.ToFullString());
+
+            UnitTestsMutantsCodePath = Path.Combine(Path.GetDirectoryName(unitTestProject.FullName),
+                "UnitTestMutants.cs");
+            File.WriteAllText(UnitTestsMutantsCodePath, unitTestTree.GetRoot().ToFullString());
+
+            unitTestProject.ProjectItems.AddFromFile(UnitTestsMutantsCodePath);
+            unitTestProject.Save();
+
+            SolutionBuild2 solutionBuild2 = (SolutionBuild2)unitTestProject.DTE.Solution.SolutionBuild;
+            solutionBuild2.BuildProject(solutionBuild2.ActiveConfiguration.Name,
+                unitTestProject.UniqueName, true);
+            bool unitTestCompiledOK = (solutionBuild2.LastBuildInfo == 0);
+
+            return unitTestCompiledOK;
+        }
+
+        private bool AddMutationAnalysisToSourceCodeProject(SourceCodeMutationResult sourceCodeMutationResult,
+            EnvDTE.Project sourceCodeProject)
+        {
+            var sourceCodeUsings = sourceCodeMutationResult.Usings
+                .GroupBy(u => u.ToFullString()).Select(iu => iu.First()).ToList();
+            var unitTestUsings = Usings.GroupBy(u => u.ToFullString()).Select(iu => iu.First()).ToList();
+
+            var sourceCodeCompilationUnit = SyntaxFactory.CompilationUnit()
+                .WithUsings(SyntaxFactory.List(sourceCodeUsings.ToArray()))
                 .WithMembers(
                     SyntaxFactory.SingletonList<MemberDeclarationSyntax>(
                         SyntaxFactory.NamespaceDeclaration(
-                            SyntaxFactory.IdentifierName("MutatedUnitTestClasses"))
+                            SyntaxFactory.IdentifierName("SourceCodeProjectMutants"))
                         .WithMembers(
                             SyntaxFactory.SingletonList<MemberDeclarationSyntax>(
-                                SyntaxFactory.ClassDeclaration("FirstUnitTestTestClass")
+                                SyntaxFactory.ClassDeclaration("FirstSourceCodeMutant")
                                 .WithModifiers(
                                     SyntaxFactory.TokenList(
                                         SyntaxFactory.Token(SyntaxKind.PublicKeyword)))))))
                 .NormalizeWhitespace();
 
-            var compilationUnitRoot = compilationUnit.SyntaxTree.GetRoot() as CompilationUnitSyntax;
-            var mutatedUnitTestClassesNameSpace =
-                compilationUnitRoot.DescendantNodes().OfType<NamespaceDeclarationSyntax>().First();
-            var firstUnitTestTestMutant =
-                mutatedUnitTestClassesNameSpace.DescendantNodes().OfType<ClassDeclarationSyntax>().First();
+            var sourceCodeCompilationUnitRoot = sourceCodeCompilationUnit.SyntaxTree.GetRoot() as CompilationUnitSyntax;
 
-            generatedUnitTestMutants.AddRange(sourceCodeMutationResult.GeneratedMutants);
-            var compilationUnitSyntaxTree = compilationUnitRoot
-                .InsertNodesAfter(firstUnitTestTestMutant, 
-                generatedUnitTestMutants.Select(p => p.MutatedCodeRoot));
-            
-            var compilation = CSharpCompilation.Create(
-                "MutatedUnitTestprojectCompilation",
-                options: options,
-                references: _references)
-                .AddSyntaxTrees(compilationUnitSyntaxTree.SyntaxTree);
+            var sourceCodeMutantsNameSpace =
+                sourceCodeCompilationUnitRoot.DescendantNodes().OfType<NamespaceDeclarationSyntax>().First();
 
-            var stream = new MemoryStream();
-            var emitResult = compilation.Emit(stream);
+            var firstSourceCodeMutant =
+                sourceCodeMutantsNameSpace.DescendantNodes().OfType<ClassDeclarationSyntax>().First();
 
-            if (emitResult.Success)
-            {
-                MutatedUnitTestCodePath = Path.Combine(Path.GetDirectoryName(unitTestProject.FullName), 
-                    "MutationTestingCode.cs");
-                using (StreamWriter file = new StreamWriter(MutatedUnitTestCodePath, true))
-                {
-                    file.Write(compilationUnitSyntaxTree.SyntaxTree);
-                }
-                return compilation;
-            }
+            var sourceCodeCompilationUnitSyntaxTree = sourceCodeCompilationUnitRoot
+                .InsertNodesAfter(firstSourceCodeMutant,
+                sourceCodeMutationResult.GeneratedMutants.Select(p => p.MutatedCodeRoot));
 
-            throw new Exception("There was an error while trying to mutate the unit test project." +
-                "Can not compile the generated unit test mutants.");
+            var sourceCodeTree = CSharpSyntaxTree.ParseText(sourceCodeCompilationUnitSyntaxTree.ToFullString());
+
+            SourceCodeMutantsCodePath = Path.Combine(Path.GetDirectoryName(sourceCodeProject.FullName), 
+                "SourceCodeMutants.cs");
+            File.WriteAllText(SourceCodeMutantsCodePath, sourceCodeTree.GetRoot().ToFullString());
+
+            //add source code mutation analysis to sc project
+            sourceCodeProject.ProjectItems.AddFromFile(SourceCodeMutantsCodePath);
+            sourceCodeProject.Save();
+
+            //recompile the source code project
+            SolutionBuild2 sourceCodeSolutionBuild2 = (SolutionBuild2)sourceCodeProject.DTE.Solution.SolutionBuild;
+            sourceCodeSolutionBuild2.BuildProject(sourceCodeSolutionBuild2.ActiveConfiguration.Name,
+                sourceCodeProject.UniqueName, true);
+
+            bool sourceCodeCompiledOK = (sourceCodeSolutionBuild2.LastBuildInfo == 0);
+
+            return sourceCodeCompiledOK;
         }
 
         private List<GeneratedMutant> GenerateMutantsForUnitTestProject(
@@ -146,6 +224,9 @@ namespace MTOOS.Extension.MutationAnalysis
 
                     if (namespaceClasses.Count != 0)
                     {
+                        Usings.AddRange(namespaceTreeRoot.DescendantNodes()
+                            .OfType<UsingDirectiveSyntax>().ToList());
+
                         var unitTestClass = namespaceClasses.ElementAt(0);
                         var unitTestClassName = unitTestClass.Identifier.Value.ToString();
 

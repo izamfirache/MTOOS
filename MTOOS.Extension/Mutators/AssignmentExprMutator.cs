@@ -1,110 +1,63 @@
-﻿using EnvDTE80;
-using Microsoft.CodeAnalysis;
+﻿using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
-using System;
+using MTOOS.Extension.Helpers;
+using MTOOS.Extension.Models;
 using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace MTOOS.Extension.Mutators
 {
     public class AssignmentExprMutator : CSharpSyntaxRewriter
     {
-        private SyntaxNode _namespaceRootNode;
+        private SyntaxNode _classRootNode;
         private MutantCreator _mutantCreator;
         private SemanticModel _semanticModel;
+        private RandomTypeGenerator _randomTypeGenerator;
 
-        public AssignmentExprMutator(SyntaxNode namespaceRootNode, MutantCreator mutantCreator,
-            SemanticModel semanticModel)
+        public AssignmentExprMutator(SyntaxNode classRootNode, MutantCreator mutantCreator,
+            SemanticModel semanticModel, RandomTypeGenerator randomTypeGenerator)
         {
-            _namespaceRootNode = namespaceRootNode;
+            _classRootNode = classRootNode;
             _mutantCreator = mutantCreator;
             _semanticModel = semanticModel;
+            _randomTypeGenerator = randomTypeGenerator;
         }
 
-        public override SyntaxNode VisitVariableDeclaration(VariableDeclarationSyntax node)
+        public override SyntaxNode VisitAssignmentExpression(AssignmentExpressionSyntax node)
         {
-            var variableType = node.Type;
-            var variables = node.Variables;
+            var nodeSemanticModel = _semanticModel.Compilation.GetSemanticModel(node.SyntaxTree);
+            var typeInfo = nodeSemanticModel.GetTypeInfo(node);
 
-            var symbolInfo = _semanticModel.GetSymbolInfo(node.Type);
-            var typeSymbol = symbolInfo.Symbol.ToString();
+            ExpressionSyntax replaceValueSyntaxNode = _randomTypeGenerator.ResolveType(typeInfo.Type.ToString());
 
-            var replaceValueSyntaxNode = ResolveExpressionType(typeSymbol);
+            //if (typeInfo.Type.IsAbstract) // TODO: rethink this, might be abstract class, not interface
+            //{
+            //    //get a type that implements that interface
+            //    string toBeResolvedType = 
+            //        _randomTypeGenerator.GetTypeForInterface(typeInfo.Type.Name);
+
+            //    replaceValueSyntaxNode = toBeResolvedType != null ?
+            //        _randomTypeGenerator.ResolveType(toBeResolvedType) : null;
+            //}
+            //else
+            //{
+            //    replaceValueSyntaxNode =
+            //        _randomTypeGenerator.ResolveType(typeInfo.Type.ToString());
+            //}
 
             if (replaceValueSyntaxNode != null)
             {
-                // if not empty take the first one ??
-                VariableDeclaratorSyntax variableDeclaratorSyntax = variables.First();
-                var variableName = variableDeclaratorSyntax.Identifier.Value.ToString();
-                var variableAssignmentStatement = variableDeclaratorSyntax.Initializer;
+                var newAssignmentNode =
+                    SyntaxFactory.AssignmentExpression(
+                        node.Kind(),
+                        node.Left,
+                        replaceValueSyntaxNode).NormalizeWhitespace();
 
-                var variableDeclarationWithoutAssignmentNode = SyntaxFactory.VariableDeclaration(variableType)
-                            .AddVariables(SyntaxFactory.VariableDeclarator(
-                        SyntaxFactory.Identifier(variableName))
-                        .WithTrailingTrivia(SyntaxFactory.Space)
-                    .WithInitializer(
-                        SyntaxFactory.EqualsValueClause(replaceValueSyntaxNode
-                            .WithLeadingTrivia(SyntaxFactory.Space))));
-
-                var mutatedNamespaceRoot = _namespaceRootNode.ReplaceNode(node, variableDeclarationWithoutAssignmentNode);
-                _mutantCreator.CreateNewMutant(mutatedNamespaceRoot, false);
-            }
-            else
-            {
-                //variable declaration without assignment statement -- nothing to mutate
-                return node;
+                var mutatedClassRoot = _classRootNode.ReplaceNode(node, newAssignmentNode);
+                _mutantCreator.CreateNewMutant(mutatedClassRoot, false);
             }
 
             return node;
-        }
-
-        private ExpressionSyntax ResolveExpressionType(string typeSymbol)
-        {
-            if(typeSymbol == "int")
-            {
-                return SyntaxFactory.LiteralExpression(
-                    SyntaxKind.NumericLiteralExpression,
-                    SyntaxFactory.Literal(GetRandomInt()));
-            }
-
-            if(typeSymbol == "string")
-            {
-                return SyntaxFactory.LiteralExpression(
-                    SyntaxKind.StringLiteralExpression,
-                    SyntaxFactory.Literal(GetRandomString()));
-            }
-
-            if(typeSymbol == "bool")
-            {
-                return GetRandomInt() % 2 == 0 ? 
-                    SyntaxFactory.LiteralExpression(SyntaxKind.TrueLiteralExpression) :
-                    SyntaxFactory.LiteralExpression(SyntaxKind.FalseLiteralExpression);
-            }
-
-            return null;
-        }
-
-        private int GetRandomInt()
-        {
-            Random rnd = new Random();
-            return rnd.Next(0, 10000);
-        }
-
-        private string GetRandomString()
-        {
-            const string pool = "abcdefghijklmnopqrstuvwxyz0123456789!?@#$%^&*()[]{}";
-            var builder = new StringBuilder();
-            Random rnd = new Random();
-
-            for (var i = 0; i < rnd.Next(15, 20); i++)
-            {
-                var c = pool[rnd.Next(0, pool.Length)];
-                builder.Append(c);
-            }
-            return builder.ToString();
         }
     }
 }
